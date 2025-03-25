@@ -3,14 +3,14 @@ import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { FaEye, FaEyeSlash, FaLock, FaEnvelope, FaGoogle, FaGithub, FaLinkedin } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaLock, FaEnvelope } from "react-icons/fa";
 
 // Import the images
 import image1 from './Login/img1.jpg';
 import image2 from './Login/img2.jpg';
 import image3 from './Login/img3.jpg';
 import image4 from './Login/img4.jpg';
-import image5 from './Login/img5.jpg'; // Update the path as needed
+import image5 from './Login/img5.jpg';
 
 const Login = ({ setUser }) => {
   const [formData, setFormData] = useState({
@@ -233,7 +233,7 @@ const Login = ({ setUser }) => {
                   Forgot Password?
                 </button>
               </div>
-              
+
               {/* Login Button */}
               <button
                 type="submit"
@@ -256,20 +256,20 @@ const Login = ({ setUser }) => {
                   "Sign In"
                 )}
               </button>
-              
+
             </form>
-            
+
             <div className="text-center mt-8">
-            <p className="text-gray-700">
-              If You Dont Have Account ?{" "}
-              <button
-                onClick={() => navigate("/createaccount")}
-                className="text-blue-400 font-bold hover:text-blue-800 hover:underline"
-              >
-                SignUp
-              </button>
-            </p>
-          </div>
+              <p className="text-gray-700">
+                If You Dont Have Account ?{" "}
+                <button
+                  onClick={() => navigate("/createaccount")}
+                  className="text-blue-400 font-bold hover:text-blue-800 hover:underline"
+                >
+                  SignUp
+                </button>
+              </p>
+            </div>
             {/* Create Account Link */}
 
           </div>
