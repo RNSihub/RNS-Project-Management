@@ -1,7 +1,6 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
-from playwright.sync_api import sync_playwright
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password, check_password
@@ -17,20 +16,24 @@ import string
 from datetime import datetime, timedelta, timezone
 import time
 import jwt
+from google.oauth2 import id_token
+from google.auth.transport import requests
+import os
+
 
 
 # MongoDB setup
 client = MongoClient(os.getenv("MONGO_URI"))
 db = client[os.getenv("MONGO_DB_NAME")]
 meetings_collection = db[os.getenv("MONGO_MEETINGS_COLLECTION")]
-jobs_collection = db[os.getenv("MONGO_JOBS_COLLECTION")]
+Tasks_collection = db[os.getenv("MONGO_JOBS_COLLECTION")]
 
 # In-memory storage for OTPs
 otp_storage = {}
 
 def generate_otp():
     return ''.join(random.choices(string.digits, k=6))
-    
+
 JWT_SECRET = "secret"
 JWT_ALGORITHM = "HS256"
 def generate_tokens(id, username):
@@ -43,46 +46,31 @@ def generate_tokens(id, username):
     token = jwt.encode(access_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return {"jwt": token}
 
-# MongoDB setu
-
 @csrf_exempt
 def login_user(request):
     if request.method == "POST":
         try:
-            # Parse the incoming request data
             data = json.loads(request.body)
             user_identifier = data.get("email")  # or username depending on the login field
             password = data.get("password")
-            
-            # Debugging output
-            print(f"Received login request for: {user_identifier}")
-            print(f"Entered password: {password}")
 
-            # Ensure both email/username and password are provided
             if not user_identifier or not password:
                 return JsonResponse({"error": "Both fields are required"}, status=400)
 
-            # Find the user in your database (assuming you have a collection called 'meetings_collection')
             user = meetings_collection.find_one({
                 "$or": [{"username": user_identifier}, {"email": user_identifier}]
             })
 
-            # If user not found, return error
             if not user:
-                print("User not found")  # Debugging line
                 return JsonResponse({"error": "Invalid username or password"}, status=401)
 
-            # Retrieve the stored hashed password
             stored_password = user.get("password")
             if not stored_password:
-                print("No password found in user data")  # Debugging line
                 return JsonResponse({"error": "Invalid username or password"}, status=401)
 
-            # Check if the entered password matches the stored hash
             if bcrypt.checkpw(password.encode("utf-8"), stored_password.encode("utf-8")):
-                # If password matches, remove the password and send the user data
                 user.pop("password", None)
-                user["_id"] = str(user["_id"])  # Convert MongoDB ObjectId to string
+                user["_id"] = str(user["_id"])
 
                 user_id = user.get("_id")
                 username = user.get("username")
@@ -90,17 +78,14 @@ def login_user(request):
 
                 return JsonResponse({"message": "Login successful", "user": user, "token": tokens}, status=200)
             else:
-                print("Password mismatch")  # Debugging line
                 return JsonResponse({"error": "Invalid username or password"}, status=401)
 
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON format"}, status=400)
         except Exception as e:
-            print(f"Exception occurred: {e}")  # Debugging line
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
-
 
 @csrf_exempt
 def send_otp(request):
@@ -226,7 +211,6 @@ def createaccount(request):
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON format"}, status=400)
         except Exception as e:
-            print(f"Error: {e}")
             return JsonResponse({"error": "Internal server error"}, status=500)
 
     return JsonResponse({"error": "Invalid request method."}, status=405)
@@ -241,7 +225,6 @@ def forgot_send_otp(request):
             if not email:
                 return JsonResponse({"error": "Email is required."}, status=400)
 
-            # Check if the email exists in the database
             user = meetings_collection.find_one({"email": email})
             if not user:
                 return JsonResponse({"error": "Invalid email."}, status=400)
@@ -265,5 +248,71 @@ def forgot_send_otp(request):
             return JsonResponse({"error": "Invalid JSON format"}, status=400)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Invalid request method."}, status=405)
+
+
+
+def verify_google_token(token):
+    try:
+        id_info = id_token.verify_oauth2_token(token, requests.Request(), os.getenv("GOOGLE_OAUTH2_CLIENT_ID"))
+        if id_info["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
+            raise ValueError("Wrong issuer.")
+        return id_info
+    except ValueError as e:
+        return None
+
+def generate_tokens(id, username):
+    access_payload = {
+        "id": str(id),
+        "username": str(username),
+        "exp": (datetime.utcnow() + timedelta(minutes=600)).timestamp(),  # Expiration in 600 minutes
+        "iat": datetime.utcnow().timestamp(),  # Issued at current time
+    }
+    token = jwt.encode(access_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    return {"jwt": token}
+
+@csrf_exempt
+def google_signup(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+            token = data.get("token", "").strip()
+
+            if not token:
+                return JsonResponse({"error": "Token is required."}, status=400)
+
+            id_info = verify_google_token(token)
+            if not id_info:
+                return JsonResponse({"error": "Invalid Google token."}, status=400)
+
+            username = id_info.get("name", "").strip()
+            email = id_info.get("email", "").strip()
+            google_id = id_info.get("sub", "").strip()
+
+            if not all([username, email, google_id]):
+                return JsonResponse({"error": "All fields are required."}, status=400)
+
+            existing_user = meetings_collection.find_one(
+                {"$or": [{"email": email}, {"googleId": google_id}]}
+            )
+            if existing_user:
+                return JsonResponse({"error": "User already exists."}, status=400)
+
+            user_data = {
+                "username": username,
+                "email": email,
+                "googleId": google_id,
+            }
+            result = meetings_collection.insert_one(user_data)
+            user_id = str(result.inserted_id)
+            tokens = generate_tokens(user_id, username)
+
+            return JsonResponse({"message": "Account created successfully!", "token": tokens}, status=201)
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON format"}, status=400)
+        except Exception as e:
+            return JsonResponse({"error": "Internal server error"}, status=500)
 
     return JsonResponse({"error": "Invalid request method."}, status=405)

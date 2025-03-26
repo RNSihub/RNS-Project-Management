@@ -1,66 +1,204 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Layout, Row, Col, Card, Statistic, Timeline,
+  Table, Tag, Progress, Typography
+} from 'antd';
+import {
+  FileTextOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+  ProjectOutlined,
+  UserOutlined
+} from '@ant-design/icons';
+import axios from 'axios';
 
-const HomeLogoLoader = () => {
-  const [animationStage, setAnimationStage] = useState(0);
+const { Title, Text } = Typography;
+const { Content } = Layout;
 
+const HomePage = () => {
+  const [taskStats, setTaskStats] = useState({
+    total_tasks: 0,
+    task_breakdown: {
+      TODO: 0,
+      IN_PROGRESS: 0,
+      DONE: 0
+    }
+  });
+  const [recentTasks, setRecentTasks] = useState([]);
+  const [userActivities, setUserActivities] = useState([]);
+
+  // Fetch dashboard data
   useEffect(() => {
-    const stages = [
-      { duration: 500, stage: 1 },
-      { duration: 800, stage: 2 },
-      { duration: 1000, stage: 3 }
-    ];
+    const fetchDashboardData = async () => {
+      try {
+        const [statsResponse, tasksResponse, activitiesResponse] = await Promise.all([
+          axios.get('/api/tasks/stats/'),
+          axios.get('/api/tasks/?limit=5&ordering=-created_at'),
+          axios.get('/api/user/activities/')  // Assumed endpoint for user activities
+        ]);
 
-    const timer = setTimeout(() => {
-      if (animationStage < stages.length) {
-        setAnimationStage(prev => prev + 1);
+        setTaskStats(statsResponse.data);
+        setRecentTasks(tasksResponse.data);
+        setUserActivities(activitiesResponse.data);
+      } catch (error) {
+        console.error('Error fetching dashboard data', error);
       }
-    }, stages[animationStage]?.duration || 0);
+    };
 
-    return () => clearTimeout(timer);
-  }, [animationStage]);
+    fetchDashboardData();
+  }, []);
+
+  // Recent Tasks Table Columns
+  const taskColumns = [
+    {
+      title: 'Title',
+      dataIndex: 'title',
+      key: 'title',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => {
+        const colorMap = {
+          'TODO': 'blue',
+          'IN_PROGRESS': 'orange',
+          'DONE': 'green'
+        };
+        return <Tag color={colorMap[status]}>{status}</Tag>;
+      }
+    },
+    {
+      title: 'Due Date',
+      dataIndex: 'due_date',
+      key: 'due_date',
+    }
+  ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
-      <div className="relative w-64 h-64">
-        {/* Outer Circle */}
-        <div 
-          className={`absolute inset-0 rounded-full border-8 border-blue-500 transition-all duration-700 ease-in-out ${
-            animationStage >= 0 
-              ? 'opacity-100 scale-100' 
-              : 'opacity-0 scale-0'
-          }`}
-        />
+    <Layout style={{ minHeight: '100vh', background: 'white' }}>
+      <Content style={{ padding: '24px', background: '#f0f2f5' }}>
+        {/* Page Header */}
+        <Row gutter={16} style={{ marginBottom: 24 }}>
+          <Col span={24}>
+            <Card>
+              <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
+                Dashboard Overview
+              </Title>
+              <Text type="secondary">Welcome to your productivity hub</Text>
+            </Card>
+          </Col>
+        </Row>
 
-        {/* Home Icon Path */}
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          viewBox="0 0 24 24" 
-          className={`absolute inset-0 w-full h-full transition-all duration-700 ease-in-out ${
-            animationStage >= 1 
-              ? 'opacity-100 scale-100 text-blue-600' 
-              : 'opacity-0 scale-50 text-blue-300'
-          }`}
-        >
-          <path 
-            d="M12 3L2 12h3v8h14v-8h3L12 3zm0 0l0 6m0 0l5 5m-5-5L7 11" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2" 
-            strokeLinejoin="round"
-          />
-        </svg>
+        {/* Task Statistics */}
+        <Row gutter={16} style={{ marginBottom: 24 }}>
+          <Col span={8}>
+            <Card>
+              <Statistic
+                title="Total Tasks"
+                value={taskStats.total_tasks}
+                prefix={<FileTextOutlined />}
+                valueStyle={{ color: '#1890ff' }}
+              />
+              <Progress
+                percent={
+                  taskStats.total_tasks > 0
+                    ? (taskStats.task_breakdown.DONE / taskStats.total_tasks * 100).toFixed(0)
+                    : 0
+                }
+                status="active"
+              />
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card>
+              <Statistic
+                title="Tasks in Progress"
+                value={taskStats.task_breakdown.IN_PROGRESS}
+                prefix={<ClockCircleOutlined />}
+                valueStyle={{ color: '#orange' }}
+              />
+              <Progress
+                percent={
+                  taskStats.total_tasks > 0
+                    ? (taskStats.task_breakdown.IN_PROGRESS / taskStats.total_tasks * 100).toFixed(0)
+                    : 0
+                }
+                status="active"
+                strokeColor="#orange"
+              />
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card>
+              <Statistic
+                title="Completed Tasks"
+                value={taskStats.task_breakdown.DONE}
+                prefix={<CheckCircleOutlined />}
+                valueStyle={{ color: '#52c41a' }}
+              />
+              <Progress
+                percent={
+                  taskStats.total_tasks > 0
+                    ? (taskStats.task_breakdown.DONE / taskStats.total_tasks * 100).toFixed(0)
+                    : 0
+                }
+                status="success"
+              />
+            </Card>
+          </Col>
+        </Row>
 
-        {/* Pulsing Inner Highlight */}
-        <div 
-          className={`absolute inset-4 rounded-full bg-blue-200 opacity-0 transition-all duration-700 ease-in-out ${
-            animationStage >= 2 
-              ? 'opacity-50 animate-ping' 
-              : 'opacity-0'
-          }`}
-        />
-      </div>
-    </div>
+        {/* Recent Tasks and User Activities */}
+        <Row gutter={16}>
+          <Col span={14}>
+            <Card
+              title={
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
+                    <ProjectOutlined /> Recent Tasks
+                  </Title>
+                </div>
+              }
+            >
+              <Table
+                columns={taskColumns}
+                dataSource={recentTasks}
+                rowKey="_id"
+                pagination={false}
+              />
+            </Card>
+          </Col>
+          <Col span={10}>
+            <Card
+              title={
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
+                    <UserOutlined /> Recent Activities
+                  </Title>
+                </div>
+              }
+            >
+              <Timeline>
+                {userActivities.map((activity, index) => (
+                  <Timeline.Item
+                    key={index}
+                    color={
+                      activity.type === 'task_completed' ? 'green' :
+                      activity.type === 'task_created' ? 'blue' :
+                      'gray'
+                    }
+                  >
+                    {activity.description} <Text type="secondary">{activity.timestamp}</Text>
+                  </Timeline.Item>
+                ))}
+              </Timeline>
+            </Card>
+          </Col>
+        </Row>
+      </Content>
+    </Layout>
   );
 };
 
-export default HomeLogoLoader;
+export default HomePage;

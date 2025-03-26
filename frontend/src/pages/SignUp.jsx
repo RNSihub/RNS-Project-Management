@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
 const CreateAccount = () => {
   // Form state management
@@ -252,6 +253,33 @@ const CreateAccount = () => {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignUp = async (response) => {
+    try {
+      const { credential } = response;
+      const userData = jwt_decode(credential);
+
+      const createAccountResponse = await axios.post("http://127.0.0.1:8000/api/google-signup", {
+        username: userData.name,
+        email: userData.email,
+        googleId: userData.sub,
+      });
+
+      if (createAccountResponse.status === 201) {
+        setSuccess("Account created successfully! Redirecting to login...");
+        // Redirect after a slight delay to show success message
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
+      }
+    } catch (error) {
+      if (error.response && error.response.data) {
+        setError(error.response.data.error || "Error creating account.");
+      } else {
+        setError("Error creating account. Please try again.");
+      }
     }
   };
 
@@ -587,6 +615,15 @@ const CreateAccount = () => {
                 Login
               </button>
             </p>
+          </div>
+
+          <div className="mt-6">
+            <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
+              <GoogleLogin
+                onSuccess={handleGoogleSignUp}
+                onError={() => setError("Google Sign-In failed. Please try again.")}
+              />
+            </GoogleOAuthProvider>
           </div>
       </div>
     </div>
