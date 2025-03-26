@@ -1,21 +1,34 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { useState } from "react"; // Import useState
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useState } from "react";
 import Login from "./pages/Login";
-import Home from "./pages/Home";
-import SignUp from "./pages/SignUp"; // Import CreateAccount
-import ForgotPassword from "./pages/Forgot Password";
+import Dashboard from "./pages/Dashboard"; // Use Dashboard component
+import SignUp from "./pages/SignUp";
+import ForgotPassword from "./pages/ForgotPassword"; // Fixed import path
+import Sidebar from "./components/navbar";
+import Attendance from "./pages/attendance"; // Updated import to PascalCase
 
 const App = () => {
-  const [user, setUser] = useState(null); // Add user state
+  const [user, setUser] = useState(null);
+
+  // Logout handler
+  const handleLogout = () => {
+    setUser(null);
+  };
 
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Login setUser={setUser} />} /> {/* Pass setUser */}
-        <Route path="/home" element={<Home user={user} />} /> {/* Pass user */}
-        <Route path="/createaccount" element={<SignUp />} /> {/* Lowercase route */}
-        <Route path="/forgot-password" element={<ForgotPassword />} /> {/* Lowercase route */}
-      </Routes>
+      {/* Conditionally render Sidebar only when user is logged in */}
+      {user && <Sidebar user={user} onLogout={handleLogout} />}
+      
+      <div className={`transition-all duration-300 ${user ? 'pl-20 md:pl-64' : 'pl-0'}`}>
+        <Routes>
+          <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Login setUser={setUser} />} />
+          <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to="/" />} />
+          <Route path="/createaccount" element={<SignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/attendance" element={<Attendance />} /> {/* Updated Route */}
+        </Routes>
+      </div>
     </Router>
   );
 };

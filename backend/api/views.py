@@ -18,15 +18,14 @@ import time
 import jwt
 from google.oauth2 import id_token
 from google.auth.transport import requests
-import os
-
-
+import pytz
 
 # MongoDB setup
 client = MongoClient(os.getenv("MONGO_URI"))
 db = client[os.getenv("MONGO_DB_NAME")]
 meetings_collection = db[os.getenv("MONGO_MEETINGS_COLLECTION")]
 Tasks_collection = db[os.getenv("MONGO_JOBS_COLLECTION")]
+attendance_collection = db['Attendance']
 
 # In-memory storage for OTPs
 otp_storage = {}
@@ -36,6 +35,7 @@ def generate_otp():
 
 JWT_SECRET = "secret"
 JWT_ALGORITHM = "HS256"
+
 def generate_tokens(id, username):
     access_payload = {
         "id": str(id),
@@ -251,8 +251,6 @@ def forgot_send_otp(request):
 
     return JsonResponse({"error": "Invalid request method."}, status=405)
 
-
-
 def verify_google_token(token):
     try:
         id_info = id_token.verify_oauth2_token(token, requests.Request(), os.getenv("GOOGLE_OAUTH2_CLIENT_ID"))
@@ -261,16 +259,6 @@ def verify_google_token(token):
         return id_info
     except ValueError as e:
         return None
-
-def generate_tokens(id, username):
-    access_payload = {
-        "id": str(id),
-        "username": str(username),
-        "exp": (datetime.utcnow() + timedelta(minutes=600)).timestamp(),  # Expiration in 600 minutes
-        "iat": datetime.utcnow().timestamp(),  # Issued at current time
-    }
-    token = jwt.encode(access_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
-    return {"jwt": token}
 
 @csrf_exempt
 def google_signup(request):
@@ -316,3 +304,4 @@ def google_signup(request):
             return JsonResponse({"error": "Internal server error"}, status=500)
 
     return JsonResponse({"error": "Invalid request method."}, status=405)
+

@@ -116,7 +116,7 @@ const Login = ({ setUser }) => {
         toast.success("Login successful! Redirecting...");
 
         // Add animation before redirect
-        setTimeout(() => navigate("/home"), 1);
+        setTimeout(() => navigate("/dashboard"), 1);
 
         // Clear failed attempts from session storage
         sessionStorage.removeItem(`failedAttempts_${formData.email}`);
@@ -162,7 +162,7 @@ const Login = ({ setUser }) => {
         toast.success("Google login successful! Redirecting...");
 
         // Add animation before redirect
-        setTimeout(() => navigate("/home"), 1);
+        setTimeout(() => navigate("/dashboard"), 1);
       } else {
         toast.error(data.error || "Google login failed.");
       }

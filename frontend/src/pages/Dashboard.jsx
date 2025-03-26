@@ -10,7 +10,7 @@ import {
   ProjectOutlined,
   UserOutlined
 } from '@ant-design/icons';
-import axios from 'axios';
+// import axios from 'axios';
 
 const { Title, Text } = Typography;
 const { Content } = Layout;
@@ -75,6 +75,10 @@ const HomePage = () => {
     }
   ];
 
+  // Ensure task_breakdown is defined
+  const { task_breakdown = {} } = taskStats;
+  const { TODO = 0, IN_PROGRESS = 0, DONE = 0 } = task_breakdown;
+
   return (
     <Layout style={{ minHeight: '100vh', background: 'white' }}>
       <Content style={{ padding: '24px', background: '#f0f2f5' }}>
@@ -103,7 +107,7 @@ const HomePage = () => {
               <Progress
                 percent={
                   taskStats.total_tasks > 0
-                    ? (taskStats.task_breakdown.DONE / taskStats.total_tasks * 100).toFixed(0)
+                    ? (DONE / taskStats.total_tasks * 100).toFixed(0)
                     : 0
                 }
                 status="active"
@@ -114,14 +118,14 @@ const HomePage = () => {
             <Card>
               <Statistic
                 title="Tasks in Progress"
-                value={taskStats.task_breakdown.IN_PROGRESS}
+                value={IN_PROGRESS}
                 prefix={<ClockCircleOutlined />}
                 valueStyle={{ color: '#orange' }}
               />
               <Progress
                 percent={
                   taskStats.total_tasks > 0
-                    ? (taskStats.task_breakdown.IN_PROGRESS / taskStats.total_tasks * 100).toFixed(0)
+                    ? (IN_PROGRESS / taskStats.total_tasks * 100).toFixed(0)
                     : 0
                 }
                 status="active"
@@ -133,14 +137,14 @@ const HomePage = () => {
             <Card>
               <Statistic
                 title="Completed Tasks"
-                value={taskStats.task_breakdown.DONE}
+                value={DONE}
                 prefix={<CheckCircleOutlined />}
                 valueStyle={{ color: '#52c41a' }}
               />
               <Progress
                 percent={
                   taskStats.total_tasks > 0
-                    ? (taskStats.task_breakdown.DONE / taskStats.total_tasks * 100).toFixed(0)
+                    ? (DONE / taskStats.total_tasks * 100).toFixed(0)
                     : 0
                 }
                 status="success"
@@ -179,20 +183,20 @@ const HomePage = () => {
                 </div>
               }
             >
-              <Timeline>
-                {userActivities.map((activity, index) => (
-                  <Timeline.Item
-                    key={index}
-                    color={
-                      activity.type === 'task_completed' ? 'green' :
-                      activity.type === 'task_created' ? 'blue' :
-                      'gray'
-                    }
-                  >
-                    {activity.description} <Text type="secondary">{activity.timestamp}</Text>
-                  </Timeline.Item>
-                ))}
-              </Timeline>
+              <Timeline
+                items={Array.isArray(userActivities) ? userActivities.map((activity, index) => ({
+                  key: index,
+                  color:
+                    activity.type === 'task_completed' ? 'green' :
+                    activity.type === 'task_created' ? 'blue' :
+                    'gray',
+                  children: (
+                    <>
+                      {activity.description} <Text type="secondary">{activity.timestamp}</Text>
+                    </>
+                  )
+                })) : []}
+              />
             </Card>
           </Col>
         </Row>
