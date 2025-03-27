@@ -22,16 +22,13 @@ import pytz
 
 # MongoDB setup
 client = MongoClient(os.getenv("MONGO_URI"))
-meetings_collection = "MONGO_MEETINGS_COLLECTION"
-Tasks_collection = "MONGO_JOBS_COLLECTION"
-
 db = client[os.getenv("MONGO_DB_NAME")]
-
+meetings_collection = db[os.getenv("MONGO_MEETINGS_COLLECTION")]
+Tasks_collection = db[os.getenv("MONGO_JOBS_COLLECTION")]
 attendance_collection = db['Attendance']
 
-# In-memory storage for OTPs and user activity
+# In-memory storage for OTPs
 otp_storage = {}
-user_activity = {}
 
 def generate_otp():
     return ''.join(random.choices(string.digits, k=6))
@@ -78,9 +75,6 @@ def login_user(request):
                 user_id = user.get("_id")
                 username = user.get("username")
                 tokens = generate_tokens(user_id, username)
-
-                # Track user activity
-                user_activity[user_id] = datetime.utcnow()
 
                 return JsonResponse({"message": "Login successful", "user": user, "token": tokens}, status=200)
             else:
@@ -291,10 +285,7 @@ def google_signup(request):
                 {"$or": [{"email": email}, {"googleId": google_id}]}
             )
             if existing_user:
-                user_id = str(existing_user["_id"])
-                username = existing_user["username"]
-                tokens = generate_tokens(user_id, username)
-                return JsonResponse({"message": "Login successful!", "token": tokens}, status=200)
+                return JsonResponse({"error": "User already exists."}, status=400)
 
             user_data = {
                 "username": username,
@@ -305,106 +296,11 @@ def google_signup(request):
             user_id = str(result.inserted_id)
             tokens = generate_tokens(user_id, username)
 
-            # Track user activity
-            user_activity[user_id] = datetime.utcnow()
-
             return JsonResponse({"message": "Account created successfully!", "token": tokens}, status=201)
 
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON format"}, status=400)
         except Exception as e:
             return JsonResponse({"error": "Internal server error"}, status=500)
-
-    return JsonResponse({"error": "Invalid request method."}, status=405)
-
-
-@csrf_exempt
-def google_login(request):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body.decode("utf-8"))
-            token = data.get("token", "").strip()
-
-            if not token:
-                return JsonResponse({"error": "Token is required."}, status=400)
-
-            id_info = verify_google_token(token)
-            if not id_info:
-                return JsonResponse({"error": "Invalid Google token."}, status=400)
-
-            email = id_info.get("email", "").strip()
-            google_id = id_info.get("sub", "").strip()
-
-            if not all([email, google_id]):
-                return JsonResponse({"error": "All fields are required."}, status=400)
-
-            user = meetings_collection.find_one(
-                {"$or": [{"email": email}, {"googleId": google_id}]}
-            )
-            if not user:
-                return JsonResponse({"error": "User not found."}, status=404)
-
-            user_id = str(user["_id"])
-            username = user["username"]
-            tokens = generate_tokens(user_id, username)
-
-            # Track user activity
-            user_activity[user_id] = datetime.utcnow()
-
-            return JsonResponse({"message": "Login successful!", "token": tokens}, status=200)
-
-        except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON format"}, status=400)
-        except Exception as e:
-            return JsonResponse({"error": "Internal server error"}, status=500)
-
-    return JsonResponse({"error": "Invalid request method."}, status=405)
-
-
-@csrf_exempt
-def track_activity(request):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body.decode("utf-8"))
-            user_id = data.get("userId", "").strip()
-
-            if not user_id:
-                return JsonResponse({"error": "User ID is required."}, status=400)
-
-            # Update user activity timestamp
-            user_activity[user_id] = datetime.utcnow()
-
-            return JsonResponse({"message": "Activity tracked successfully!"}, status=200)
-
-        except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON format"}, status=400)
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
-
-    return JsonResponse({"error": "Invalid request method."}, status=405)
-
-@csrf_exempt
-def check_activity(request):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body.decode("utf-8"))
-            user_id = data.get("userId", "").strip()
-
-            if not user_id:
-                return JsonResponse({"error": "User ID is required."}, status=400)
-
-            last_activity = user_activity.get(user_id)
-            if not last_activity:
-                return JsonResponse({"error": "User not found."}, status=404)
-
-            if datetime.utcnow() - last_activity > timedelta(minutes=30):
-                return JsonResponse({"message": "User inactive for 30 minutes. Please log in again."}, status=401)
-
-            return JsonResponse({"message": "User is active."}, status=200)
-
-        except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON format"}, status=400)
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Invalid request method."}, status=405)

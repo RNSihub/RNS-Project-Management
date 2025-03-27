@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'api',
+    'rest_framework',  # Add Django Rest Framework
+    'corsheaders',  # Add CORS headers
 ]
 
 MIDDLEWARE = [
@@ -53,7 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # CORS middleware
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -142,7 +144,22 @@ CORS_ALLOW_HEADERS = [
     "Authorization",
     "X-CSRFToken",
     "X-Requested-With",
+    "X-Custom-Header",  # Example of a custom header
 ]
+
+# Rest Framework Configuration (Optional)
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',  # For example, require authentication for all views
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+}
 
 EMAIL_HOST = os.getenv("EMAIL_HOST")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
@@ -167,9 +184,9 @@ EMAIL_HOST_USER = 'kandaring2k24@gmail.com'
 EMAIL_HOST_PASSWORD = 'rqdfvijjlywvcxyp'
 
 
-GOOGLE_OAUTH2_CLIENT_ID = os.getenv("GOOGLE_OAUTH2_CLIENT_ID")
-GOOGLE_OAUTH2_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH2_CLIENT_SECRET")
-GOOGLE_OAUTH2_REDIRECT_URI = os.getenv("GOOGLE_OAUTH2_REDIRECT_URI")
+# GOOGLE_OAUTH2_CLIENT_ID = os.getenv("GOOGLE_OAUTH2_CLIENT_ID")
+# GOOGLE_OAUTH2_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH2_CLIENT_SECRET")
+# GOOGLE_OAUTH2_REDIRECT_URI = os.getenv("GOOGLE_OAUTH2_REDIRECT_URI")
 
 # settings.py
 DEBUG = True

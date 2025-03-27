@@ -7,6 +7,7 @@ import ForgotPassword from "./pages/ForgotPassword"; // Fixed import path
 import Sidebar from "./components/navbar";
 import Attendance from "./pages/attendance"; // Updated import to PascalCase
 import TodoListApp from "./pages/todo"; // Updated import to PascalCase
+import ProjectConversationApp from "./pages/Projects"; // Updated import to PascalCase
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -38,6 +39,7 @@ const App = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/attendance" element={<Attendance />} /> {/* Updated Route */}
           <Route path="/todo" element={<TodoListApp />} /> {/* Updated Route */}
+          <Route path="/projects" element={<ProjectConversationApp />} /> {/* Updated Route */}
 
         </Routes>
       </div>

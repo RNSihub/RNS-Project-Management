@@ -1,152 +1,104 @@
-from django.http import JsonResponse
-from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from djongo import models
-from datetime import datetime
-from bson import ObjectId  # For ObjectId handling in MongoDB
+from pymongo import MongoClient
+from bson import ObjectId
+import os
+from datetime import datetime, timedelta
+from google.oauth2 import id_token
+from google.auth.transport import requests
+import jwt
 
-# MongoDB URI and Database Settings
-MONGO_URI = "mongodb+srv://1QoSRtE75wSEibZJ:1QoSRtE75wSEibZJ@cluster0.mregq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-MONGO_DB_NAME = "Todo_Lister"
-MONGO_JOBS_COLLECTION = "Tasks"
-MONGO_ACTIVITIES_COLLECTION = "Activities"
+# MongoDB Connection
+client = MongoClient(os.getenv("MONGO_URI"))
+db = client[os.getenv("MONGO_DB_NAME")]
+meetings_collection = db[os.getenv("MONGO_MEETINGS_COLLECTION")]
+Tasks_collection = db[os.getenv("MONGO_JOBS_COLLECTION")]
+Activities_collection = db[os.getenv("MONGO_ACTIVITIES_COLLECTION")]
 
+class UserActivitiesView(APIView):
+    permission_classes = [IsAuthenticated]
 
-# Helper function to fetch tasks from the MongoDB
-def fetch_tasks():
-    try:
-        # Query the MongoDB collection
-        tasks = models.DjongoCollection(MONGO_JOBS_COLLECTION).objects.all()
-        task_list = [
-            {
-                '_id': str(task['_id']),
-                'title': task['title'],
-                'description': task['description'],
-                'assignedTo': task['assignedTo'],
-                'status': task['status'],
-                'priority': task['priority'],
-                'deadline': task['deadline'],
-                'created_at': task['created_at'],
-            }
-            for task in tasks
-        ]
-        return task_list
-    except Exception as e:
-        return {"error": str(e)}
+    def get(self, request):
+        """
+        Retrieve recent user activities
+        """
+        # Get activities from the last 30 days
+        thirty_days_ago = datetime.now() - timedelta(days=30)
 
-# GET all tasks
-@api_view(['GET'])
-def get_tasks(request):
-    tasks = fetch_tasks()
-    if 'error' in tasks:
-        return Response({"error": tasks['error']}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    return Response(tasks)
+        activities = list(Activities_collection.find({
+            'user_id': str(request.user.id),
+            'timestamp': {'$gte': thirty_days_ago}
+        }).sort('timestamp', -1).limit(10))
 
-# POST (Create) a new task
-@api_view(['POST'])
-def create_task(request):
-    if request.method == 'POST':
-        try:
-            data = request.data  # Get the incoming data from the request
-            
-            # Ensure all required fields are present
-            if not all(key in data for key in ['title', 'description', 'assignedTo', 'status', 'priority', 'deadline']):
-                return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
+        # Convert ObjectId to string
+        for activity in activities:
+            activity['_id'] = str(activity['_id'])
 
-            # Prepare the task data
-            task_data = {
-                'title': data['title'],
-                'description': data['description'],
-                'assignedTo': data['assignedTo'],
-                'status': data.get('status', 'Pending'),
-                'priority': data.get('priority', 'Medium'),
-                'deadline': data['deadline'],
-                'created_at': datetime.now()
-            }
+        return Response(activities)
 
-            # Insert task into MongoDB
-            task = models.DjongoCollection(MONGO_JOBS_COLLECTION).objects.create(**task_data)
+    def log_activity(self, user_id, activity_type, description):
+        """
+        Log a new user activity
+        """
+        activity = {
+            'user_id': str(user_id),
+            'type': activity_type,
+            'description': description,
+            'timestamp': datetime.now()
+        }
 
-            # Return the newly created task
-            return Response({
-                '_id': str(task['_id']),
-                'title': task['title'],
-                'description': task['description'],
-                'assignedTo': task['assignedTo'],
-                'status': task['status'],
-                'priority': task['priority'],
-                'deadline': task['deadline'],
-                'created_at': task['created_at']
-            }, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        Activities_collection.insert_one(activity)
 
-# PUT (Update) an existing task
-@api_view(['PUT'])
-def update_task(request, task_id):
-    try:
-        # Find task by ID
-        task = models.DjongoCollection(MONGO_JOBS_COLLECTION).objects.get(_id=ObjectId(task_id))
-        
-        if request.method == 'PUT':
-            data = request.data  # Get updated data
+# Modify existing TaskView to log activities
+class TaskView(APIView):
+    def post(self, request):
+        """
+        Override post method to log task creation activity
+        """
+        # Existing task creation logic
+        task_data = request.data.copy()
+        task_data['created_by_id'] = str(request.user.id)
+        task_data['created_at'] = datetime.now()
+        task_data['updated_at'] = datetime.now()
 
-            # Update fields
-            task.title = data.get('title', task.title)
-            task.description = data.get('description', task.description)
-            task.assignedTo = data.get('assignedTo', task.assignedTo)
-            task.status = data.get('status', task.status)
-            task.priority = data.get('priority', task.priority)
-            task.deadline = data.get('deadline', task.deadline)
-            task.save()  # Save updated task
-            
-            return Response({
-                '_id': str(task['_id']),
-                'title': task['title'],
-                'description': task['description'],
-                'assignedTo': task['assignedTo'],
-                'status': task['status'],
-                'priority': task['priority'],
-                'deadline': task['deadline'],
-                'created_at': task['created_at']
-            })
-    except models.DjongoCollection.DoesNotExist:
+        result = Tasks_collection.insert_one(task_data)
+        task_data['_id'] = str(result.inserted_id)
+
+        # Log activity
+        UserActivitiesView().log_activity(
+            request.user.id,
+            'task_created',
+            f'Created task: {task_data["title"]}'
+        )
+
+        return Response(task_data, status=status.HTTP_201_CREATED)
+
+    def put(self, request, pk=None):
+        """
+        Override put method to log task update activity
+        """
+        # Existing update logic
+        update_data = request.data.copy()
+        update_data['updated_at'] = datetime.now()
+
+        result = Tasks_collection.update_one(
+            {'_id': ObjectId(pk)},
+            {'$set': update_data}
+        )
+
+        if result.modified_count:
+            updated_task = Tasks_collection.find_one({'_id': ObjectId(pk)})
+            updated_task['_id'] = str(updated_task['_id'])
+
+            # Log activity
+            UserActivitiesView().log_activity(
+                request.user.id,
+                'task_updated',
+                f'Updated task: {updated_task["title"]}'
+            )
+
+            return Response(updated_task)
+
         return Response({"error": "Task not found"}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-# DELETE a task
-@api_view(['DELETE'])
-def delete_task(request, task_id):
-    try:
-        task = models.DjongoCollection(MONGO_JOBS_COLLECTION).objects.get(_id=ObjectId(task_id))  # Find the task by ID
-        if request.method == 'DELETE':
-            task.delete()  # Delete task
-            return Response(status=status.HTTP_204_NO_CONTENT)  # Return HTTP 204 No Content
-    except models.DjongoCollection.DoesNotExist:
-        return Response({"error": "Task not found"}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-# GET recent tasks (fetching the 5 most recent tasks)
-@api_view(['GET'])
-def get_recent_tasks(request):
-    try:
-        tasks = models.DjongoCollection(MONGO_JOBS_COLLECTION).objects.all().order_by('-created_at')[:5]  # Get 5 most recent tasks
-        recent_task_data = [
-            {
-                '_id': str(task['_id']),
-                'title': task['title'],
-                'description': task['description'],
-                'assignedTo': task['assignedTo'],
-                'status': task['status'],
-                'priority': task['priority'],
-                'deadline': task['deadline'],
-                'created_at': task['created_at'],
-            }
-            for task in tasks
-        ]
-        return Response(recent_task_data)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

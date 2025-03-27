@@ -150,7 +150,7 @@ const CreateAccount = () => {
 
     try {
       setIsSendingOtp(true);
-      const response = await axios.post("http://127.0.0.1:8000/api/sendotp", { email });
+      const response = await axios.post("http://127.0.0.1:8000/api/sendotp/", { email });
       if (response.status === 200) {
         setSuccess("OTP resent successfully!");
         setOtpResendTimer(60);
@@ -256,32 +256,32 @@ const CreateAccount = () => {
     }
   };
 
-  const handleGoogleSignUp = async (response) => {
-    try {
-      const { credential } = response;
-      const userData = jwt_decode(credential);
+  // const handleGoogleSignUp = async (response) => {
+  //   try {
+  //     const { credential } = response;
+  //     const userData = jwt_decode(credential);
 
-      const createAccountResponse = await axios.post("http://127.0.0.1:8000/api/google-signup", {
-        username: userData.name,
-        email: userData.email,
-        googleId: userData.sub,
-      });
+  //     const createAccountResponse = await axios.post("http://127.0.0.1:8000/api/google-signup", {
+  //       username: userData.name,
+  //       email: userData.email,
+  //       googleId: userData.sub,
+  //     });
 
-      if (createAccountResponse.status === 201) {
-        setSuccess("Account created successfully! Redirecting to login...");
-        // Redirect after a slight delay to show success message
-        setTimeout(() => {
-          navigate("/");
-        }, 2000);
-      }
-    } catch (error) {
-      if (error.response && error.response.data) {
-        setError(error.response.data.error || "Error creating account.");
-      } else {
-        setError("Error creating account. Please try again.");
-      }
-    }
-  };
+  //     if (createAccountResponse.status === 201) {
+  //       setSuccess("Account created successfully! Redirecting to login...");
+  //       // Redirect after a slight delay to show success message
+  //       setTimeout(() => {
+  //         navigate("/");
+  //       }, 2000);
+  //     }
+  //   } catch (error) {
+  //     if (error.response && error.response.data) {
+  //       setError(error.response.data.error || "Error creating account.");
+  //     } else {
+  //       setError("Error creating account. Please try again.");
+  //     }
+  //   }
+  // };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-50 to-indigo-100 p-4">
@@ -617,14 +617,14 @@ const CreateAccount = () => {
             </p>
           </div>
 
-          <div className="mt-6">
+          {/* <div className="mt-6">
             <GoogleOAuthProvider clientId="788869087154-fp10nmcohqlv5brf5lhbr887fi1oeec6.apps.googleusercontent.com">
               <GoogleLogin
                 onSuccess={handleGoogleSignUp}
                 onError={() => setError("Google Sign-In failed. Please try again.")}
               />
             </GoogleOAuthProvider>
-          </div>
+          </div> */}
       </div>
     </div>
   );

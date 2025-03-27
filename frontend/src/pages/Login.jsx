@@ -89,7 +89,7 @@ const Login = ({ setUser }) => {
     setError(""); // Clear previous errors
 
     try {
-      const response = await fetch("http://localhost:8000/api/login", {
+      const response = await fetch("http://127.0.0.1:8000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -178,34 +178,34 @@ const Login = ({ setUser }) => {
   const handleSocialLogin = (provider) => {
     toast.info(`${provider} login will be integrated soon!`);
   };
-  const handleGoogleSignUp = async (response) => {
-    try {
-      const { credential } = response;
-      const userData = jwt_decode(credential);
+  // const handleGoogleSignUp = async (response) => {
+  //   try {
+  //     const { credential } = response;
+  //     const userData = jwt_decode(credential);
 
-      const createAccountResponse = await axios.post("http://127.0.0.1:8000/api/google-signup", {
-        username: userData.name,
-        email: userData.email,
-        googleId: userData.sub,
-      });
+  //     const createAccountResponse = await axios.post("http://127.0.0.1:8000/api/google-signup", {
+  //       username: userData.name,
+  //       email: userData.email,
+  //       googleId: userData.sub,
+  //     });
 
-      if (createAccountResponse.status === 201) {
-        setSuccess("Account created successfully! Redirecting to login...");
-        // Redirect after a slight delay to show success message
-        setTimeout(() => {
-          navigate("/");
-        }, 2000);
-      }
-    } catch (error) {
-      if (error.response && error.response.data) {
-        setError(error.response.data.error || "Error creating account.");
-      } else {
-        setError("Error creating account. Please try again.");
-      }
-    }
-  };
+  //     if (createAccountResponse.status === 201) {
+  //       setSuccess("Account created successfully! Redirecting to login...");
+  //       // Redirect after a slight delay to show success message
+  //       setTimeout(() => {
+  //         navigate("/");
+  //       }, 2000);
+  //     }
+  //   } catch (error) {
+  //     if (error.response && error.response.data) {
+  //       setError(error.response.data.error || "Error creating account.");
+  //     } else {
+  //       setError("Error creating account. Please try again.");
+  //     }
+  //   }
+  // };
   return (
-    <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
+    // <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-white">
         <div className="flex flex-col md:flex-row bg-white rounded-xl shadow-lg overflow-hidden w-full max-w-4xl">
           {/* Left Side - Login Form */}
@@ -319,13 +319,13 @@ const Login = ({ setUser }) => {
                   )}
                 </button>
 
-                {/* Google Login Button */}
+                {/* Google Login Button
                 <GoogleOAuthProvider clientId="788869087154-fp10nmcohqlv5brf5lhbr887fi1oeec6.apps.googleusercontent.com">
                               <GoogleLogin
                                 onSuccess={handleGoogleSignUp}
                                 onError={() => setError("Google Sign-In failed. Please try again.")}
                               />
-                </GoogleOAuthProvider>
+                </GoogleOAuthProvider> */}
 
               </form>
 
@@ -366,7 +366,7 @@ const Login = ({ setUser }) => {
         </div>
         <ToastContainer position="top-right" autoClose={3000} />
       </div>
-    </GoogleOAuthProvider>
+    // </GoogleOAuthProvider>
   );
 };
 
