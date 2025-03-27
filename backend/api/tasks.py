@@ -12,9 +12,6 @@ MONGO_DB_NAME = "Todo_Lister"
 MONGO_JOBS_COLLECTION = "Tasks"
 MONGO_ACTIVITIES_COLLECTION = "Activities"
 
-# Database connection
-from djongo import connection
-connection.connect(MONGO_DB_NAME, host=MONGO_URI)
 
 # Helper function to fetch tasks from the MongoDB
 def fetch_tasks():
