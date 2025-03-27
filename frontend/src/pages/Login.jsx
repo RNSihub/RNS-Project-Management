@@ -178,7 +178,32 @@ const Login = ({ setUser }) => {
   const handleSocialLogin = (provider) => {
     toast.info(`${provider} login will be integrated soon!`);
   };
+  const handleGoogleSignUp = async (response) => {
+    try {
+      const { credential } = response;
+      const userData = jwt_decode(credential);
 
+      const createAccountResponse = await axios.post("http://127.0.0.1:8000/api/google-signup", {
+        username: userData.name,
+        email: userData.email,
+        googleId: userData.sub,
+      });
+
+      if (createAccountResponse.status === 201) {
+        setSuccess("Account created successfully! Redirecting to login...");
+        // Redirect after a slight delay to show success message
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
+      }
+    } catch (error) {
+      if (error.response && error.response.data) {
+        setError(error.response.data.error || "Error creating account.");
+      } else {
+        setError("Error creating account. Please try again.");
+      }
+    }
+  };
   return (
     <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-white">
@@ -295,14 +320,12 @@ const Login = ({ setUser }) => {
                 </button>
 
                 {/* Google Login Button */}
-                <GoogleLogin
-                  onSuccess={handleGoogleLoginSuccess}
-                  onError={handleGoogleLoginFailure}
-                  className="w-full p-3 rounded-lg font-bold text-sm bg-red-600 hover:bg-red-700 text-white transform hover:scale-105 transition duration-300 shadow-md flex items-center justify-center"
-                >
-                  <FaGoogle className="mr-2" />
-                  Login with Google
-                </GoogleLogin>
+                <GoogleOAuthProvider clientId="788869087154-fp10nmcohqlv5brf5lhbr887fi1oeec6.apps.googleusercontent.com">
+                              <GoogleLogin
+                                onSuccess={handleGoogleSignUp}
+                                onError={() => setError("Google Sign-In failed. Please try again.")}
+                              />
+                </GoogleOAuthProvider>
 
               </form>
 

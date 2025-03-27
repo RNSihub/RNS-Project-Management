@@ -618,7 +618,7 @@ const CreateAccount = () => {
           </div>
 
           <div className="mt-6">
-            <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
+            <GoogleOAuthProvider clientId="788869087154-fp10nmcohqlv5brf5lhbr887fi1oeec6.apps.googleusercontent.com">
               <GoogleLogin
                 onSuccess={handleGoogleSignUp}
                 onError={() => setError("Google Sign-In failed. Please try again.")}

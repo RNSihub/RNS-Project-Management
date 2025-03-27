@@ -30,6 +30,19 @@ attendance_collection = db['Attendance']
 
 # In-memory storage for OTPs
 
+
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+import json
+import datetime
+import pytz
+from pymongo import MongoClient
+
+# Assuming attendance_collection is defined somewhere in your code
+# client = MongoClient('your_mongo_db_connection_string')
+# db = client['your_database_name']
+# attendance_collection = db['attendance']
+
 @csrf_exempt
 def record_attendance(request):
     """
@@ -37,20 +50,25 @@ def record_attendance(request):
     """
     if request.method == 'POST':
         try:
+            # Parse the incoming JSON data
             data = json.loads(request.body)
+
+            # Extract user information from the request
             email = data.get('email')
             username = data.get('username')
             attendance_type = data.get('attendance_type')
 
             if not email or not username or not attendance_type:
-                return JsonResponse({'status': 'error', 'message': 'Missing required parameters'}, status=400)
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Missing required parameters'
+                }, status=400)
 
-            if attendance_type not in ['office_in', 'office_out', 'break_in', 'break_out', 'lunch_in', 'lunch_out']:
-                return JsonResponse({'status': 'error', 'message': 'Invalid attendance type'}, status=400)
-
+            # Get current timestamp in IST
             ist = pytz.timezone('Asia/Kolkata')
-            current_time = datetime.now(ist)
+            current_time = datetime.datetime.now(ist)
 
+            # Prepare attendance record
             attendance_record = {
                 'email': email,
                 'username': username,
@@ -59,33 +77,59 @@ def record_attendance(request):
                 'attendance_type': attendance_type
             }
 
+            # Insert the record into MongoDB
             result = attendance_collection.insert_one(attendance_record)
 
-            return JsonResponse({'status': 'success', 'message': f'{attendance_type.capitalize()} recorded successfully', 'record_id': str(result.inserted_id)})
+            return JsonResponse({
+                'status': 'success',
+                'message': f'{attendance_type.capitalize()} recorded successfully',
+                'record_id': str(result.inserted_id)
+            })
 
         except json.JSONDecodeError:
-            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid JSON'
+            }, status=400)
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': 'An error occurred while recording attendance'}, status=500)
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
 
     elif request.method == 'GET':
+        # Retrieve attendance records
         try:
             email = request.GET.get('email')
 
             if not email:
-                return JsonResponse({'status': 'error', 'message': 'Missing email parameter'}, status=400)
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Missing email parameter'
+                }, status=400)
 
-            records = list(attendance_collection.find({'email': email}).sort('timestamp', -1))
+            # Find all attendance records for the user
+            records = list(attendance_collection.find({
+                'email': email
+            }).sort('timestamp', -1))
 
+            # Convert ObjectId to string for JSON serialization
             for record in records:
                 record['_id'] = str(record['_id'])
 
-            return JsonResponse({'status': 'success', 'records': records})
+            return JsonResponse({
+                'status': 'success',
+                'records': records
+            })
 
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': 'An error occurred while retrieving attendance records'}, status=500)
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
 
 def get_today_attendance(request):
     """
@@ -96,16 +140,22 @@ def get_today_attendance(request):
             email = request.GET.get('email')
 
             if not email:
-                return JsonResponse({'status': 'error', 'message': 'Missing email parameter'}, status=400)
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Missing email parameter'
+                }, status=400)
 
+            # Get today's date in IST
             ist = pytz.timezone('Asia/Kolkata')
-            today = datetime.now(ist).date()
+            today = datetime.datetime.now(ist).date()
 
+            # Find today's attendance records
             today_records = list(attendance_collection.find({
                 'email': email,
-                'date': today.isoformat(),
+                'date': today.isoformat()
             }).sort('timestamp', 1))
 
+            # Organize records by attendance type
             attendance_summary = {
                 'office_in': None,
                 'office_out': None,
@@ -119,9 +169,15 @@ def get_today_attendance(request):
                 attendance_type = record['attendance_type']
                 attendance_summary[attendance_type] = record['timestamp']
 
-            return JsonResponse({'status': 'success', 'attendance': attendance_summary})
+            return JsonResponse({
+                'status': 'success',
+                'attendance': attendance_summary
+            })
 
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': 'An error occurred while retrieving today\'s attendance'}, status=500)
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
