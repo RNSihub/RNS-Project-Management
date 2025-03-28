@@ -15,16 +15,16 @@ urlpatterns = [
     path('record_attendance', record_attendance, name='record_attendance'),
     path('get_today_attendance', get_today_attendance, name='get_today_attendance'),
     
-     path('create', create_project, name='create_project'),
-    path('projects', list_projects, name='list_projects'),
-    path('<str:project_id>/conversations',get_project_conversations, name='get_project_conversations'),
-    path('<str:project_id>/add-conversation', add_conversation, name='add_conversation'),
-    path('<str:project_id>/upload-image', upload_image, name='upload_image'),
-    path('<str:project_id>/link-preview', get_link_preview, name='get_link_preview'),
+     path('create/', create_project, name='create_project'),
+    path('projects/', list_projects, name='list_projects'),
+    path('<str:project_id>/conversations/',get_project_conversations, name='get_project_conversations'),
+    path('<str:project_id>/add-conversation/', add_conversation, name='add_conversation'),
+    path('<str:project_id>/upload-image/', upload_image, name='upload_image'),
+    path('<str:project_id>/link-preview/', get_link_preview, name='get_link_preview'),
     
     # New endpoints for editing and deleting conversations
     path('<str:project_id>/edit-conversation/<str:conversation_id>/', 
-         edit_conversation, name='edit_conversation'),
+         edit_conversation, name='edit_conversation/'),
     path('<str:project_id>/delete-conversation/<str:conversation_id>/', 
-         delete_conversation, name='delete_conversation')
+         delete_conversation, name='delete_conversation/')
 ]

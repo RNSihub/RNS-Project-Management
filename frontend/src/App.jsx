@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard"; // Use Dashboard component
 import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword"; // Fixed import path
 import Sidebar from "./components/navbar";
+import RNSLoadingSpinner from "./components/loading";
 import Attendance from "./pages/attendance"; // Updated import to PascalCase
 import TodoListApp from "./pages/todo"; // Updated import to PascalCase
 import ProjectConversationApp from "./pages/Projects"; // Updated import to PascalCase

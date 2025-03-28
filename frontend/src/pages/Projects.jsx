@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Copy, Download, Trash2, Edit, Send, Image, Link, X, ChevronRight } from 'lucide-react';
+import RNSLoadingSpinner from "../components/loading";
 
 const ProjectConversationApp = () => {
   const [projects, setProjects] = useState([]);
@@ -15,6 +16,7 @@ const ProjectConversationApp = () => {
   const [linkPreview, setLinkPreview] = useState(null);
   const [showConversations, setShowConversations] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
   const conversationEndRef = useRef(null);
 
@@ -36,18 +38,22 @@ const ProjectConversationApp = () => {
   };
 
   const fetchProjects = async () => {
+    setLoading(true);
     try {
       const response = await fetch('http://127.0.0.1:8000/api/projects/');
       const data = await response.json();
       setProjects(data.projects);
     } catch (error) {
       console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const createProject = async () => {
     if (!newProjectName.trim()) return;
 
+    setLoading(true);
     try {
       const response = await fetch('http://127.0.0.1:8000/api/create/', {
         method: 'POST',
@@ -66,10 +72,13 @@ const ProjectConversationApp = () => {
       fetchProjects();
     } catch (error) {
       console.error('Error creating project:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const selectProject = async (projectId) => {
+    setLoading(true);
     try {
       const response = await fetch(`http://127.0.0.1:8000/api/${projectId}/conversations/`);
       const data = await response.json();
@@ -78,12 +87,15 @@ const ProjectConversationApp = () => {
       setLinkPreview(null);
     } catch (error) {
       console.error('Error fetching conversations:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const addConversation = async () => {
     if (!selectedProject || !newConversation.trim()) return;
 
+    setLoading(true);
     try {
       const response = await fetch(`http://127.0.0.1:8000/api/${selectedProject}/add-conversation/`, {
         method: 'POST',
@@ -101,14 +113,18 @@ const ProjectConversationApp = () => {
       setConversations(data.conversations);
       setNewConversation('');
       setLinkPreview(null);
+      setImageFile(null);
     } catch (error) {
       console.error('Error adding conversation:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const uploadImage = async () => {
     if (!selectedProject || !imageFile) return;
 
+    setLoading(true);
     try {
       const reader = new FileReader();
       reader.readAsDataURL(imageFile);
@@ -133,10 +149,13 @@ const ProjectConversationApp = () => {
       };
     } catch (error) {
       console.error('Error uploading image:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const deleteConversation = async (conversationId) => {
+    setLoading(true);
     try {
       await fetch(`http://127.0.0.1:8000/api/${selectedProject}/delete-conversation/${conversationId}`, {
         method: 'DELETE',
@@ -147,10 +166,13 @@ const ProjectConversationApp = () => {
       setConversations(data.conversations);
     } catch (error) {
       console.error('Error deleting conversation:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const editConversation = async (conversationId, newContent) => {
+    setLoading(true);
     try {
       await fetch(`http://127.0.0.1:8000/api/${selectedProject}/edit-conversation/${conversationId}`, {
         method: 'PUT',
@@ -166,10 +188,13 @@ const ProjectConversationApp = () => {
       setEditingConversation(null);
     } catch (error) {
       console.error('Error editing conversation:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleLinkPreview = async (url) => {
+    setLoading(true);
     try {
       const response = await fetch(`http://127.0.0.1:8000/api/${selectedProject}/link-preview/`, {
         method: 'POST',
@@ -182,12 +207,16 @@ const ProjectConversationApp = () => {
       setLinkPreview(data);
     } catch (error) {
       console.error('Error fetching link preview:', error);
+      setLinkPreview(null); // If there's an error, treat it as regular text
+    } finally {
+      setLoading(false);
     }
   };
 
   const uploadLinkPreview = async () => {
     if (!linkPreview || !selectedProject) return;
 
+    setLoading(true);
     try {
       const response = await fetch(`http://127.0.0.1:8000/api/${selectedProject}/add-conversation/`, {
         method: 'POST',
@@ -212,6 +241,8 @@ const ProjectConversationApp = () => {
       setLinkPreview(null);
     } catch (error) {
       console.error('Error uploading link preview:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -234,10 +265,35 @@ const ProjectConversationApp = () => {
     navigator.clipboard.writeText(text);
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      addConversation();
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setNewConversation(value);
+
+    // Check if the input is a URL
+    const urlPattern = /^(https?:\/\/[^\s]+)$/;
+    if (urlPattern.test(value)) {
+      handleLinkPreview(value);
+    } else {
+      setLinkPreview(null);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-gray-100 flex relative">
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <RNSLoadingSpinner />
+        </div>
+      )}
       {/* Projects Sidebar */}
-      <div className={`bg-white shadow-lg transition-all duration-300 ${showConversations ? 'w-72' : 'w-16'}`}>
+      <div className={`bg-white shadow-lg transition-all duration-300 ${showConversations ? 'w-64' : 'w-16'}`}>
         <div className="p-4">
           <button
             onClick={() => setShowConversations(!showConversations)}
@@ -328,7 +384,7 @@ const ProjectConversationApp = () => {
               </button>
             </div>
 
-            <div className="p-4 h-[500px] overflow-y-auto">
+            <div className="p-4 h-[400px] overflow-y-auto">
               {conversations.map((conv) => (
                 <div
                   key={conv._id}
@@ -378,7 +434,9 @@ const ProjectConversationApp = () => {
                           <small className="text-xs text-gray-500">
                             {new Date(conv.timestamp).toLocaleString()}
                           </small>
-                          <button className="text-indigo-500 hover:text-indigo-700"><Copy size={16} /></button>
+                          <button className="text-indigo-500 hover:text-indigo-700" onClick={() => copyToClipboard(conv.content)}>
+                            <Copy size={16} />
+                          </button>
                           <button
                             onClick={() => {
                               setEditingConversation(conv._id);
@@ -434,7 +492,8 @@ const ProjectConversationApp = () => {
                   placeholder="Type your message..."
                   value={newConversation}
                   maxLength={MAX_MESSAGE_LENGTH}
-                  onChange={(e) => setNewConversation(e.target.value)}
+                  onChange={handleInputChange}
+                  onKeyPress={handleKeyPress}
                   className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   rows="3"
                 />
@@ -469,15 +528,6 @@ const ProjectConversationApp = () => {
                   )}
                 </div>
               </div>
-              <div className="mt-4 flex items-center space-x-2">
-                <input
-                  type="text"
-                  placeholder="Paste a link to preview"
-                  onBlur={(e) => handleLinkPreview(e.target.value)}
-                  className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <Link size={20} className="text-gray-500" />
-              </div>
             </div>
           </div>
         )}
@@ -485,20 +535,80 @@ const ProjectConversationApp = () => {
 
       {/* Image Modal */}
       {selectedImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          <div className="relative max-w-[40%] max-h-[40%]">
-            <img src={selectedImage} alt="Enlarged" className="max-h-full max-w-full rounded-lg bottom-100" />
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-2 right-2 text-white bg-red-500 rounded-full p-2 hover:bg-red-700"
-            >
-              <X size={20} />
-            </button>
-          </div>
-        </div>
+        <ImageModal
+          selectedImage={selectedImage}
+          onClose={() => setSelectedImage(null)}
+        />
       )}
     </div>
   );
+};
+
+const ImageModal = ({ selectedImage, onClose }) => {
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-8"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-w-[90vw] max-h-[90vh] w-auto h-auto flex items-center justify-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="
+            transform transition-all duration-300 ease-in-out
+            scale-95 opacity-0 hover:scale-100 hover:opacity-100
+            animate-fade-in
+            flex items-center justify-center
+            bg-white bg-opacity-10 rounded-2xl shadow-2xl p-4
+          "
+        >
+          <img
+            src={selectedImage}
+            alt="Enlarged"
+            className="
+              object-contain max-w-full max-h-full
+              rounded-xl
+              transition-all duration-300
+              shadow-2xl
+              cursor-zoom-in
+              hover:scale-105
+            "
+          />
+          <button
+            onClick={onClose}
+            className="
+              absolute -top-10 -right-10
+              bg-red-500 text-white
+              rounded-full
+              p-2
+              hover:bg-red-700
+              transition-all
+              duration-300
+              opacity-70
+              hover:opacity-100
+              shadow-lg
+            "
+          >
+            <X size={24} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Add custom Tailwind animations to your global CSS or Tailwind config
+const customAnimations = {
+  '@keyframes fade-in': {
+    '0%': { opacity: '0', transform: 'scale(0.9)' },
+    '100%': { opacity: '1', transform: 'scale(1)' }
+  },
+  '.animate-fade-in': {
+    animationName: 'fade-in',
+    animationDuration: '0.3s',
+    animationTimingFunction: 'ease-out'
+  }
 };
 
 export default ProjectConversationApp;

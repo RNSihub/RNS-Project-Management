@@ -9,6 +9,7 @@ import {
   FaCalculator
 } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import RNSLoadingSpinner from '../components/loading';
 
 const AttendanceTracker = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -84,6 +85,7 @@ const AttendanceTracker = () => {
   };
 
   const fetchTodayAttendance = async (userEmail) => {
+    setIsLoading(true);
     try {
       const response = await fetch(`http://localhost:8000/api/get_today_attendance?email=${userEmail}`);
       const data = await response.json();
@@ -95,6 +97,8 @@ const AttendanceTracker = () => {
       }
     } catch (error) {
       toast.error('Failed to fetch today\'s attendance');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -163,6 +167,13 @@ const AttendanceTracker = () => {
             {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
         </div>
+
+        {/* Loading Spinner */}
+        {isLoading && (
+          <div className="flex justify-center items-center">
+            <RNSLoadingSpinner />
+          </div>
+        )}
 
         {/* Time Calculations */}
         <div className="grid grid-cols-3 gap-4 mb-6 text-center">
