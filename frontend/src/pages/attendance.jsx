@@ -11,6 +11,112 @@ import {
 import { motion } from 'framer-motion';
 import RNSLoadingSpinner from '../components/loading';
 
+// Digital Clock Component
+const DigitalClock = () => {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Extract time components
+  const hours = time.getHours();
+  const minutes = time.getMinutes();
+  const seconds = time.getSeconds();
+
+  // Format hours for 12-hour display
+  const displayHours = hours % 12 || 12;
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+
+  // Format with leading zeros
+  const formatNumber = (num) => num.toString().padStart(2, '0');
+
+  return (
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 120, damping: 10 }}
+      className="w-60 h-60 bg-gradient-to-b from-slate-900 to-gray-800 rounded-xl shadow-2xl border border-blue-500 flex flex-col justify-center items-center relative overflow-hidden"
+    >
+      {/* Decorative top bar */}
+      <div className="absolute top-0 left-0 w-full h-3 bg-blue-500"></div>
+
+      {/* Glowing effect */}
+      <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-3/4 h-1 bg-blue-400 blur-sm"></div>
+
+      {/* Time display section */}
+      <div className="flex flex-col items-center space-y-2 z-10">
+        {/* Digital display */}
+        <div className="bg-black bg-opacity-50 px-6 py-4 rounded-lg border border-gray-700 shadow-inner mb-3">
+          <div className="flex items-center justify-center">
+            {/* Hours */}
+            <motion.div
+              key={`hours-${displayHours}`}
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 300 }}
+              className="text-5xl font-mono font-bold text-blue-400 w-16 text-center"
+            >
+              {formatNumber(displayHours)}
+            </motion.div>
+
+            {/* Separator - blinking colon */}
+            <motion.div
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ repeat: Infinity, duration: 1 }}
+              className="text-5xl font-mono text-blue-500 px-1"
+            >
+              :
+            </motion.div>
+
+            {/* Minutes */}
+            <motion.div
+              key={`minutes-${minutes}`}
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 300 }}
+              className="text-5xl font-mono font-bold text-blue-400 w-16 text-center"
+            >
+              {formatNumber(minutes)}
+            </motion.div>
+          </div>
+
+          {/* AM/PM and seconds row */}
+          <div className="flex justify-between mt-1">
+            <div className="text-xl font-mono font-bold text-blue-600">{ampm}</div>
+            <div className="text-xl font-mono text-blue-300">{formatNumber(seconds)}</div>
+          </div>
+        </div>
+
+        {/* Date display */}
+        <div className="text-blue-300 font-mono text-sm bg-black bg-opacity-30 px-4 py-1 rounded-md">
+          {time.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+        </div>
+      </div>
+
+      {/* Decorative elements */}
+      <div className="absolute bottom-3 left-3 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+      <div className="absolute bottom-3 right-3 w-2 h-2 bg-red-500 rounded-full animate-pulse"
+           style={{ animationDelay: '0.5s' }}></div>
+
+      {/* Circuit-like patterns in background */}
+      <div className="absolute top-10 left-4 w-12 h-1 bg-blue-800 rounded-full opacity-40"></div>
+      <div className="absolute top-10 left-4 w-1 h-10 bg-blue-800 rounded-full opacity-40"></div>
+      <div className="absolute bottom-10 right-6 w-16 h-1 bg-blue-800 rounded-full opacity-40"></div>
+      <div className="absolute bottom-10 right-6 w-1 h-16 bg-blue-800 rounded-full opacity-40"></div>
+
+      {/* Tech-inspired label */}
+      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 font-mono">
+        SYS-TIME v2.5
+      </div>
+    </motion.div>
+  );
+};
+
 const AttendanceTracker = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [user, setUser] = useState(null);
@@ -143,6 +249,14 @@ const AttendanceTracker = () => {
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
+  // Generate personalized greeting
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white p-6">
       <motion.div
@@ -151,21 +265,49 @@ const AttendanceTracker = () => {
         transition={{ duration: 0.5 }}
         className="max-w-4xl mx-auto bg-white shadow-2xl rounded-2xl p-8"
       >
-        {/* Digital Clock Section */}
-        <div className="mb-6 flex justify-between items-center">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-800">
+        {/* Updated Header with Digital Clock */}
+        <div className="mb-6 flex justify-between items-center bg-gradient-to-r from-blue-100 to-white rounded-2xl p-6 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
+            className="space-y-2"
+          >
+            <h2 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-900 tracking-tight">
               Attendance Tracker
             </h2>
             {user && (
-              <p className="text-xl text-gray-600 mt-2">
-                Welcome, <span className="font-semibold text-blue-600">{user.username}</span>
-              </p>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                className="text-2xl font-medium text-gray-700 flex items-center"
+              >
+                <motion.span
+                  whileHover={{ scale: 1.05 }}
+                  className="mr-2 text-blue-500"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </motion.span>
+                <span>
+                  {getGreeting()}, <span className="font-bold text-blue-700">{user.username}</span>
+                </span>
+              </motion.p>
             )}
-          </div>
-          <div className="text-4xl font-mono text-blue-700 bg-blue-50 p-4 rounded-lg shadow-md">
-            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
+            className="flex flex-col items-center space-y-3"
+          >
+            <DigitalClock />
+            
+          </motion.div>
         </div>
 
         {/* Loading Spinner */}
