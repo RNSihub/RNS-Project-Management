@@ -8,7 +8,10 @@ import Sidebar from "./components/navbar";
 import RNSLoadingSpinner from "./components/loading";
 import Attendance from "./pages/attendance"; // Updated import to PascalCase
 import TodoListApp from "./pages/todo"; // Updated import to PascalCase
-import ProjectConversationApp from "./pages/Projects"; // Updated import to PascalCase
+import ProjectConversationApp from "./pages/Projects";
+import ChatBot from "./pages/AI/Chatbot"; // Updated import to PascalCase
+import ContentGenerator from "./pages/AI/ContentGene"; // Updated import to PascalCase
+import TextToSpeech from "./pages/TextTools/TTS"; // Updated import to PascalCase
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -41,6 +44,9 @@ const App = () => {
           <Route path="/attendance" element={<Attendance />} /> {/* Updated Route */}
           <Route path="/todo" element={<TodoListApp />} /> {/* Updated Route */}
           <Route path="/projects" element={<ProjectConversationApp />} /> {/* Updated Route */}
+          <Route path="/chatbot" element={<ChatBot />}/>
+          <Route path="/content-generation" element={<ContentGenerator />}/>
+          <Route path="/text-to-speech" element={<TextToSpeech />}/>
 
         </Routes>
       </div>

@@ -18,6 +18,8 @@ const ProjectConversationApp = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showDownloadOptions, setShowDownloadOptions] = useState(false);
+  const [renamingProject, setRenamingProject] = useState(null);
+  const [newProjectRename, setNewProjectRename] = useState('');
   const fileInputRef = useRef(null);
   const conversationEndRef = useRef(null);
   const downloadButtonRef = useRef(null);
@@ -444,6 +446,40 @@ const ProjectConversationApp = () => {
     fileInputRef.current.value = '';
   };
 
+  const deleteProject = async (projectId) => {
+    try {
+      setIsLoading(true);
+      await fetch(`http://127.0.0.1:8000/api/delete-project/${projectId}`, {
+        method: 'DELETE',
+      });
+      fetchProjects();
+    } catch (error) {
+      console.error('Error deleting project:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renameProject = async (projectId, newName) => {
+    try {
+      setIsLoading(true);
+      await fetch(`http://127.0.0.1:8000/api/rename-project/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newName }),
+      });
+      fetchProjects();
+      setRenamingProject(null);
+      setNewProjectRename('');
+    } catch (error) {
+      console.error('Error renaming project:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Find selected project name
   const selectedProjectName = projects.find(p => p._id === selectedProject)?.name || 'Channel';
 
@@ -475,18 +511,52 @@ const ProjectConversationApp = () => {
           {showConversations && (
             <div className="space-y-2 flex-grow overflow-y-auto">
               {projects.map((project) => (
-                <button
-                  key={project._id}
-                  className={`w-full text-left p-3 rounded-lg transition-all flex items-center ${
-                    selectedProject === project._id
-                      ? 'bg-indigo-600 text-white shadow-md'
-                      : 'bg-white text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 border border-gray-100'
-                  }`}
-                  onClick={() => selectProject(project._id)}
-                >
-                  <div className={`w-2 h-2 rounded-full mr-3 ${selectedProject === project._id ? 'bg-white' : 'bg-indigo-500'}`}></div>
-                  <span className="truncate">{project.name}</span>
-                </button>
+                <div key={project._id} className="relative group">
+                  <button
+                    className={`w-full text-left p-3 rounded-lg transition-all flex items-center ${
+                      selectedProject === project._id
+                        ? 'bg-indigo-400 text-white shadow-md'
+                        : 'bg-white text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 border border-gray-100'
+                    }`}
+                    onClick={() => selectProject(project._id)}
+                  >
+                    <div className={`w-2 h-2 rounded-full mr-3 ${selectedProject === project._id ? 'bg-white' : 'bg-indigo-500'}`}></div>
+                    {renamingProject === project._id ? (
+                      <input
+                        type="text"
+                        value={newProjectRename}
+                        onChange={(e) => setNewProjectRename(e.target.value)}
+                        className="flex-grow p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        onBlur={() => renameProject(project._id, newProjectRename)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            renameProject(project._id, newProjectRename);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <span className="truncate">{project.name}</span>
+                    )}
+                  </button>
+                  {showConversations && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+                      <button
+                        onClick={() => setRenamingProject(project._id)}
+                        className="text-gray-500 hover:text-indigo-600 p-1 rounded hover:bg-indigo-50"
+                        title="Rename"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
+                        onClick={() => deleteProject(project._id)}
+                        className="text-gray-500 hover:text-red-600 p-1 rounded hover:bg-red-50"
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}

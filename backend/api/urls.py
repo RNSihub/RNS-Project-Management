@@ -3,6 +3,7 @@ from .views import *
 from .tasks import *
 from .attendance import *
 from .projects import *
+from .ai import *
 
 urlpatterns = [
     path("login", login_user, name="login"),
@@ -26,5 +27,11 @@ urlpatterns = [
     path('<str:project_id>/edit-conversation/<str:conversation_id>/', 
          edit_conversation, name='edit_conversation/'),
     path('<str:project_id>/delete-conversation/<str:conversation_id>/', 
-         delete_conversation, name='delete_conversation/')
+         delete_conversation, name='delete_conversation/'),
+    
+    #a
+     path('chatbot/', chatbot_view, name='chatbot'),
+     
+     #a
+     path('generate-content/', generate_content, name='generate_content'),
 ]

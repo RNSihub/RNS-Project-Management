@@ -14,12 +14,22 @@ import {
   Clock,
   Bell,
   Award,
-  BarChart2
+  BarChart2,
+  Bot,
+  FileText,
+  Mic,
+  Headphones,
+  FileSearch,
+  Globe,
+  Edit3,
+  Zap,
+  Briefcase
 } from 'lucide-react';
 
 const Sidebar = ({ user, onLogout }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [greeting, setGreeting] = useState('');
+  const [hoveredItem, setHoveredItem] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -62,7 +72,7 @@ const Sidebar = ({ user, onLogout }) => {
       category: 'Main'
     },
     { 
-      icon: <Grid size={20} />, 
+      icon: <Briefcase size={20} />, 
       label: 'Projects', 
       path: '/projects',
       category: 'Workspace'
@@ -91,8 +101,48 @@ const Sidebar = ({ user, onLogout }) => {
       path: '/chat',
       category: 'Collaboration'
     },
-    
-    
+    { 
+      icon: <Bot size={20} />, 
+      label: 'Chatbot', 
+      path: '/chatbot',
+      category: 'AI Assistant'
+    },
+    { 
+      icon: <FileText size={20} />, 
+      label: 'Content Generation', 
+      path: '/content-generation',
+      category: 'AI Assistant'
+    },
+    { 
+      icon: <Headphones size={20} />, 
+      label: 'Text to Speech', 
+      path: '/text-to-speech',
+      category: 'Text Tools'
+    },
+    { 
+      icon: <Mic size={20} />, 
+      label: 'Speech to Text', 
+      path: '/speech-to-text',
+      category: 'Text Tools'
+    },
+    { 
+      icon: <FileSearch size={20} />, 
+      label: 'Text Summarization', 
+      path: '/text-summarization',
+      category: 'Text Tools'
+    },
+    { 
+      icon: <Globe size={20} />, 
+      label: 'Text Translation', 
+      path: '/text-translation',
+      category: 'Text Tools'
+    },
+    { 
+      icon: <Edit3 size={20} />, 
+      label: 'Text Correction', 
+      path: '/text-correction',
+      category: 'Text Tools'
+    },
   ];
 
   // Group menu items by category
@@ -116,9 +166,10 @@ const Sidebar = ({ user, onLogout }) => {
       {/* Sidebar Toggle Button */}
       <button 
         onClick={() => setIsExpanded(!isExpanded)}
-        className="absolute top-4 -right-1 bg-white shadow-md rounded-full p-2 z-50 hover:bg-blue-50 transition"
+        className="absolute top-4 -right-1 bg-white shadow-md rounded-full p-2 z-50 hover:bg-blue-50 transition-all duration-300 hover:scale-110"
+        style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(180deg)' }}
       >
-        {isExpanded ? <ChevronLeft size={25} /> : <ChevronRight size={25}/>}
+        <ChevronLeft size={25} className="transition-transform duration-300" />
       </button>
 
       {/* User Profile Section */}
@@ -126,8 +177,8 @@ const Sidebar = ({ user, onLogout }) => {
         <div 
           className={`
             w-12 h-12 rounded-full flex items-center justify-center 
-            ${user?.profilePicture ? 'p-0' : 'bg-blue-500 text-white'}
-            shadow-md
+            ${user?.profilePicture ? 'p-0' : 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'}
+            shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105
           `}
         >
           {user?.profilePicture ? (
@@ -142,7 +193,7 @@ const Sidebar = ({ user, onLogout }) => {
         </div>
         
         {isExpanded && (
-          <div>
+          <div className="transition-opacity duration-300">
             <p className="text-sm font-semibold text-gray-800">
               {user?.username || 'User'}
             </p>
@@ -158,27 +209,49 @@ const Sidebar = ({ user, onLogout }) => {
         {Object.entries(groupedMenuItems).map(([category, items]) => (
           <div key={category} className="mb-4">
             {isExpanded && (
-              <p className="px-4 text-xs font-bold text-gray-400 uppercase mb-2">
+              <p className="px-4 text-xs font-bold text-gray-400 uppercase mb-2 transition-all duration-300">
                 {category}
               </p>
             )}
             <ul>
               {items.map((item, index) => (
-                <li key={index} className="mb-1">
+                <li 
+                  key={index} 
+                  className="mb-1"
+                  onMouseEnter={() => setHoveredItem(`${category}-${index}`)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
                   <Link 
                     to={item.path} 
                     className={`
-                      flex items-center p-3 mx-2 rounded-md transition-all 
+                      flex items-center p-3 mx-2 rounded-md transition-all duration-300
                       ${isActive(item.path) 
-                        ? 'bg-blue-100 text-blue-600 shadow-md' 
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-blue-500'}
+                        ? 'bg-blue-100 text-blue-600 shadow-md translate-x-1' 
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-blue-500 hover:translate-x-1'}
                       group
                     `}
                   >
-                    <span className={`mr-3 ${isActive(item.path) ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-500'}`}>
+                    <span 
+                      className={`
+                        mr-3 transition-all duration-300
+                        ${isActive(item.path) 
+                          ? 'text-blue-600 scale-110' 
+                          : 'text-gray-400 group-hover:text-blue-500 group-hover:scale-110'}
+                        ${hoveredItem === `${category}-${index}` ? 'animate-pulse' : ''}
+                      `}
+                    >
                       {item.icon}
                     </span>
-                    {isExpanded && <span className="text-sm">{item.label}</span>}
+                    {isExpanded && (
+                      <span 
+                        className={`
+                          text-sm transition-all duration-300
+                          ${hoveredItem === `${category}-${index}` ? 'font-medium' : ''}
+                        `}
+                      >
+                        {item.label}
+                      </span>
+                    )}
                   </Link>
                 </li>
               ))}
@@ -193,24 +266,48 @@ const Sidebar = ({ user, onLogout }) => {
           to="/profile" 
           className={`
             flex items-center p-3 rounded-md mb-2 
-            text-gray-600 hover:bg-gray-100 hover:text-blue-600
-            group
+            text-gray-600 hover:bg-gray-100 hover:text-blue-600 transition-all duration-300
+            group hover:translate-x-1
           `}
+          onMouseEnter={() => setHoveredItem('profile')}
+          onMouseLeave={() => setHoveredItem(null)}
         >
-          <User size={20} className={`mr-3 text-gray-400 group-hover:text-blue-500`} />
-          {isExpanded && 'Profile'}
+          <User 
+            size={20} 
+            className={`
+              mr-3 text-gray-400 group-hover:text-blue-500 transition-all duration-300 group-hover:scale-110
+              ${hoveredItem === 'profile' ? 'animate-pulse' : ''}
+            `} 
+          />
+          {isExpanded && (
+            <span className={`text-sm ${hoveredItem === 'profile' ? 'font-medium' : ''}`}>
+              Profile
+            </span>
+          )}
         </Link>
 
         <Link 
           to="/settings" 
           className={`
             flex items-center p-3 rounded-md mb-2 
-            text-gray-600 hover:bg-gray-100 hover:text-blue-600
-            group
+            text-gray-600 hover:bg-gray-100 hover:text-blue-600 transition-all duration-300
+            group hover:translate-x-1
           `}
+          onMouseEnter={() => setHoveredItem('settings')}
+          onMouseLeave={() => setHoveredItem(null)}
         >
-          <Settings size={20} className={`mr-3 text-gray-400 group-hover:text-blue-500`} />
-          {isExpanded && 'Settings'}
+          <Settings 
+            size={20} 
+            className={`
+              mr-3 text-gray-400 group-hover:text-blue-500 transition-all duration-300 group-hover:scale-110
+              ${hoveredItem === 'settings' ? 'animate-pulse' : ''}
+            `} 
+          />
+          {isExpanded && (
+            <span className={`text-sm ${hoveredItem === 'settings' ? 'font-medium' : ''}`}>
+              Settings
+            </span>
+          )}
         </Link>
         
         <button 
@@ -220,12 +317,24 @@ const Sidebar = ({ user, onLogout }) => {
           }}
           className={`
             w-full flex items-center p-3 rounded-md 
-            text-red-600 hover:bg-red-50
-            group
+            text-red-600 hover:bg-red-50 transition-all duration-300
+            group hover:translate-x-1
           `}
+          onMouseEnter={() => setHoveredItem('logout')}
+          onMouseLeave={() => setHoveredItem(null)}
         >
-          <LogOut size={20} className="mr-3 text-red-400 group-hover:text-red-600" />
-          {isExpanded && 'Logout'}
+          <LogOut 
+            size={20} 
+            className={`
+              mr-3 text-red-400 group-hover:text-red-600 transition-all duration-300 group-hover:scale-110
+              ${hoveredItem === 'logout' ? 'animate-pulse' : ''}
+            `} 
+          />
+          {isExpanded && (
+            <span className={`text-sm ${hoveredItem === 'logout' ? 'font-medium' : ''}`}>
+              Logout
+            </span>
+          )}
         </button>
       </div>
     </div>
