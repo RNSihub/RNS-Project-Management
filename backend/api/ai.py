@@ -5,15 +5,28 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 import google.generativeai as genai
 import logging
+from pymongo import MongoClient
+from datetime import datetime
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
 # Configure the Gemini API
 GEMINI_API_KEY = "AIzaSyBSQuSk_e9UHjWba-Kw89Xd-KjU8o2keBo"
 genai.configure(api_key=GEMINI_API_KEY)
 
 # Set up the model
 model = genai.GenerativeModel('gemini-1.5-pro')
+
+# MongoDB Connection
+try:
+    mongo_uri = os.environ.get('MONGO_URI', 'mongodb+srv://1QoSRtE75wSEibZJ:1QoSRtE75wSEibZJ@cluster0.mregq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+    mongo_client = MongoClient(mongo_uri)
+    db = mongo_client.get_database(os.environ.get('MONGO_DB', 'Todo_Lister'))
+    user_story_collection = db['UserStory']
+    logger.info("MongoDB connection established successfully")
+except Exception as e:
+    logger.error(f"MongoDB connection error: {str(e)}")
 
 @csrf_exempt
 @require_POST
@@ -54,6 +67,7 @@ def generate_content(request):
     try:
         data = json.loads(request.body)
         requirement_text = data.get('requirement')
+        theme = data.get('theme', 'light')
 
         if not requirement_text:
             return JsonResponse({'error': 'Requirement text is required'}, status=400)
@@ -66,6 +80,78 @@ def generate_content(request):
     except Exception as e:
         logger.error(f"Error generating content: {str(e)}")
         return JsonResponse({'error': 'Failed to generate content'}, status=500)
+
+@csrf_exempt
+@require_POST
+def save_content(request):
+    try:
+        data = json.loads(request.body)
+        requirement = data.get('requirement')
+        content = data.get('content')
+        user_id = data.get('user_id', 'anonymous')
+        theme = data.get('theme', 'light')
+        
+        if not requirement or not content:
+            return JsonResponse({'error': 'Requirement and content are required', 'success': False}, status=400)
+            
+        # Create document to save in MongoDB
+        document = {
+            'user_id': user_id,
+            'requirement': requirement,
+            'user_story': content.get('user_story', ''),
+            'acceptance_criteria': content.get('acceptance_criteria', []),
+            'created_at': datetime.now(),
+            'updated_at': datetime.now()
+        }
+        
+        # Insert into MongoDB
+        result = user_story_collection.insert_one(document)
+        
+        # Return success response with the ID
+        return JsonResponse({
+            'success': True,
+            'message': 'Content saved successfully',
+            'id': str(result.inserted_id)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error saving content: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Failed to save content',
+            'details': str(e)
+        }, status=500)
+
+@csrf_exempt
+@require_POST
+def get_saved_contents(request):
+    try:
+        data = json.loads(request.body)
+        user_id = data.get('user_id', 'anonymous')
+        limit = data.get('limit', 10)
+        
+        # Get saved contents from MongoDB
+        contents = list(user_story_collection.find(
+            {'user_id': user_id},
+            {'_id': 1, 'requirement': 1, 'user_story': 1, 'acceptance_criteria': 1, 'created_at': 1}
+        ).sort('created_at', -1).limit(limit))
+        
+        # Convert ObjectId to string
+        for content in contents:
+            content['_id'] = str(content['_id'])
+            
+        return JsonResponse({
+            'success': True,
+            'contents': contents
+        })
+        
+    except Exception as e:
+        logger.error(f"Error retrieving saved contents: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Failed to retrieve saved contents',
+            'details': str(e)
+        }, status=500)
 
 def generate_user_story_and_acceptance_criteria(requirement_text):
     try:

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ClipboardCopy, Download, Plus, Send, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { ClipboardCopy, Download, RefreshCw, Send, CheckCircle, FileText, FileJson, File } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ChatBot = () => {
@@ -7,10 +7,11 @@ const ChatBot = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [copyStatus, setCopyStatus] = useState(null);
-  const [theme, setTheme] = useState('light');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const inputRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   // Scroll to bottom when messages change
   const scrollToBottom = () => {
@@ -32,22 +33,23 @@ const ChatBot = () => {
         },
       ]);
     }, 500);
-    
+
     // Focus input on load
     inputRef.current?.focus();
-    
-    // Check system preference for dark mode
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark');
-    }
-    
-    // Listen for theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e) => setTheme(e.matches ? 'dark' : 'light');
-    mediaQuery.addEventListener('change', handleChange);
-    
-    return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownRef]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -80,12 +82,12 @@ const ChatBot = () => {
       }
 
       const data = await response.json();
-      
+
       // Add bot response to chat with proper formatting and unique ID
       setMessages((messages) => [
         ...messages,
-        { 
-          text: formatBotResponse(data.response), 
+        {
+          text: formatBotResponse(data.response),
           sender: 'bot',
           id: Date.now()
         },
@@ -108,35 +110,35 @@ const ChatBot = () => {
   // Enhanced formatting for bot responses
   const formatBotResponse = (text) => {
     // Replace markdown links with HTML links
-    let formattedText = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline transition-colors duration-300">$1</a>');
-    
+    let formattedText = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-blue-600 hover:underline transition-colors duration-300">$1</a>');
+
     // Format code blocks with syntax highlighting
-    formattedText = formattedText.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg my-2 overflow-x-auto transition-colors duration-300"><code>$2</code></pre>');
-    
+    formattedText = formattedText.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-gray-100 p-4 rounded-lg my-2 overflow-x-auto transition-colors duration-300"><code>$2</code></pre>');
+
     // Convert inline code
-    formattedText = formattedText.replace(/`([^`]+)`/g, '<code class="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm font-mono transition-colors duration-300">$1</code>');
-    
+    formattedText = formattedText.replace(/`([^`]+)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono transition-colors duration-300">$1</code>');
+
     // Convert headings
     formattedText = formattedText.replace(/^### (.*?)$/gm, '<h3 class="text-lg font-bold my-2">$1</h3>');
     formattedText = formattedText.replace(/^## (.*?)$/gm, '<h2 class="text-xl font-bold my-3">$1</h2>');
     formattedText = formattedText.replace(/^# (.*?)$/gm, '<h1 class="text-2xl font-bold my-4">$1</h1>');
-    
+
     // Convert bold and italic
     formattedText = formattedText.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     formattedText = formattedText.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-    
+
     // Convert bullet lists
     formattedText = formattedText.replace(/^\- (.*?)$/gm, '<li class="ml-4 list-disc">$1</li>');
     formattedText = formattedText.replace(/(<li.*<\/li>)(?=\n<li)/g, '$1');
     formattedText = formattedText.replace(/(?<=\n)<li/g, '<ul class="my-2 space-y-1"><li');
     formattedText = formattedText.replace(/<\/li>(?!\n<li)/g, '</li></ul>');
-    
+
     // Convert numbered lists
     formattedText = formattedText.replace(/^\d+\. (.*?)$/gm, '<li class="ml-4 list-decimal">$1</li>');
-    
+
     // Convert paragraphs (lines with content)
     formattedText = formattedText.replace(/^(?!<[uo]l|<li|<h[1-6]|<pre|<code)(.+)$/gm, '<p class="my-2">$1</p>');
-    
+
     return formattedText;
   };
 
@@ -163,25 +165,33 @@ const ChatBot = () => {
     }, 300);
   };
 
-  const downloadChat = () => {
-    const chatContent = messages.map(msg => 
+  const downloadChat = (format) => {
+    let chatContent = messages.map(msg =>
       `${msg.sender === 'user' ? 'You' : 'RNS Assistant'}: ${msg.text.replace(/<[^>]*>/g, '')}`
     ).join('\n\n');
-    
-    const blob = new Blob([chatContent], { type: 'text/plain' });
+
+    if (format === 'json') {
+      chatContent = JSON.stringify(messages, null, 2);
+    }
+
+    const blob = new Blob([chatContent], { type: format === 'json' ? 'application/json' : 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `rns-chat-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.download = `rns-chat-${new Date().toISOString().slice(0, 10)}.${format}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
+    // Close the dropdown after download
+    setIsDropdownOpen(false);
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  };
+  const downloadAsText = () => downloadChat('txt');
+  const downloadAsJSON = () => downloadChat('json');
+  const downloadAsPDF = () => downloadChat('pdf');
+  const downloadAsWord = () => downloadChat('docx');
 
   // Message animation variants for framer-motion
   const messageVariants = {
@@ -191,22 +201,22 @@ const ChatBot = () => {
   };
 
   return (
-    <div className={`flex flex-col h-screen ${theme === 'light' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'} transition-colors duration-300`}>
+    <div className="flex flex-col h-screen bg-gray-50 text-gray-900 transition-colors duration-300">
       {/* Header */}
-      <motion.header 
-        className={`${theme === 'dark' ? 'bg-gradient-to-r from-blue-800 to-purple-900' : 'bg-gradient-to-r from-blue-600 to-blue-800'} text-white p-4 shadow-lg`}
+      <motion.header
+        className="bg-white border-b border-gray-200 p-4 flex justify-between items-center shadow-sm"
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <motion.h2 
-            className="text-xl font-bold flex items-center"
+        <div className="max-w-7xl mx-auto flex justify-between ">
+          <motion.h2
+            className="text-xl font-bold flex text-indigo-800 mr-220"
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
-            <motion.span 
+            <motion.span
               className="mr-2 inline-block"
               animate={{ rotate: [0, 10, -10, 0] }}
               transition={{ duration: 1, repeat: Infinity, repeatDelay: 5 }}
@@ -215,27 +225,18 @@ const ChatBot = () => {
             </motion.span>
             RNS Project Assistance
           </motion.h2>
-          <div className="flex space-x-3">
-            <motion.button 
-              onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-opacity-20 hover:bg-white transition-all duration-200 flex items-center"
-              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {theme === 'light' ? '🌙' : '☀️'}
-            </motion.button>
-            <motion.button 
+          <div className="flex space-x-3 relative">
+            <motion.button
               onClick={startNewChat}
               className="p-2 rounded-full hover:bg-opacity-20 hover:bg-white transition-all duration-200 flex items-center"
-              title="Start new chat"
+              title="Refresh chat"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Plus size={20} />
+              <RefreshCw size={20} />
             </motion.button>
-            <motion.button 
-              onClick={downloadChat}
+            <motion.button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="p-2 rounded-full hover:bg-opacity-20 hover:bg-white transition-all duration-200 flex items-center"
               title="Download chat"
               whileHover={{ scale: 1.1 }}
@@ -243,14 +244,59 @@ const ChatBot = () => {
             >
               <Download size={20} />
             </motion.button>
+            {isDropdownOpen && (
+              <div
+                ref={dropdownRef}
+                className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10 animate-fade-in"
+              >
+                <ul className="py-2">
+                  <li>
+                    <button
+                      onClick={downloadAsText}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                    >
+                      <FileText size={16} className="mr-3 text-indigo-500" />
+                      Text (.txt)
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={downloadAsJSON}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                    >
+                      <FileJson size={16} className="mr-3 text-indigo-500" />
+                      JSON (.json)
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={downloadAsPDF}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                    >
+                      <File size={16} className="mr-3 text-indigo-500" />
+                      PDF (.pdf)
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={downloadAsWord}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                    >
+                      <File size={16} className="mr-3 text-indigo-500" />
+                      Word (.docx)
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       </motion.header>
-      
+
       {/* Chat Messages */}
-      <div 
-        ref={chatContainerRef} 
-        className={`flex-1 overflow-y-auto p-4 space-y-4 max-w-7xl w-full mx-auto ${theme === 'dark' ? 'scrollbar-dark' : 'scrollbar-light'}`}
+      <div
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4 max-w-7xl w-full mx-auto scrollbar-light"
       >
         <AnimatePresence>
           {messages.map((message) => (
@@ -266,24 +312,24 @@ const ChatBot = () => {
               <motion.div
                 className={`relative max-w-xl p-4 rounded-xl shadow-md ${
                   message.sender === 'user'
-                    ? `${theme === 'dark' ? 'bg-gradient-to-br from-blue-700 to-blue-900' : 'bg-gradient-to-br from-blue-500 to-blue-600'} text-white`
-                    : `${theme === 'dark' ? 'bg-gray-800 text-gray-100 border border-gray-700' : 'bg-white text-gray-800 border border-gray-200'}`
+                    ? 'bg-indigo-100 border-indigo-200 border text-indigo-800'
+                    : 'bg-white text-gray-800 border border-green-200'
                 } transition-all duration-300 hover:shadow-lg`}
                 whileHover={{ scale: 1.01 }}
               >
-                <div 
-                  className={`${theme === 'dark' ? 'prose-dark' : 'prose-light'} break-words max-w-none`}
+                <div
+                  className="prose-light break-words max-w-none"
                   dangerouslySetInnerHTML={{ __html: message.text }}
                 />
-                
-                <motion.button 
+
+                <motion.button
                   onClick={() => copyMessageToClipboard(message.text, message.id)}
                   className={`absolute -top-2 -right-2 p-1.5 rounded-full ${
-                    copyStatus === message.id 
-                      ? 'bg-green-500' 
-                      : message.sender === 'user' 
-                        ? `${theme === 'dark' ? 'bg-blue-800' : 'bg-blue-700'}` 
-                        : `${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`
+                    copyStatus === message.id
+                      ? 'bg-green-500'
+                      : message.sender === 'user'
+                        ? 'bg-indigo-100 border-indigo-200 border'
+                        : 'bg-white border border-green-200'
                   } opacity-0 group-hover:opacity-100 transition-all duration-200`}
                   title="Copy message"
                   whileHover={{ scale: 1.1 }}
@@ -292,35 +338,35 @@ const ChatBot = () => {
                   {copyStatus === message.id ? (
                     <CheckCircle size={14} className="text-white" />
                   ) : (
-                    <ClipboardCopy size={14} className={message.sender === 'user' ? 'text-white' : `${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`} />
+                    <ClipboardCopy size={14} className={message.sender === 'user' ? 'text-indigo-800' : 'text-gray-700'} />
                   )}
                 </motion.button>
               </motion.div>
             </motion.div>
           ))}
         </AnimatePresence>
-        
+
         {isTyping && (
-          <motion.div 
+          <motion.div
             className="flex justify-start"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
           >
-            <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} p-3 rounded-lg shadow border transition-colors duration-300`}>
+            <div className="bg-white border-gray-200 p-3 rounded-lg shadow border transition-colors duration-300">
               <div className="flex space-x-2">
-                <motion.div 
-                  className={`w-2 h-2 ${theme === 'dark' ? 'bg-blue-500' : 'bg-blue-400'} rounded-full`}
+                <motion.div
+                  className="w-2 h-2 bg-blue-400 rounded-full"
                   animate={{ y: [0, -6, 0] }}
                   transition={{ repeat: Infinity, duration: 0.8 }}
                 />
-                <motion.div 
-                  className={`w-2 h-2 ${theme === 'dark' ? 'bg-blue-500' : 'bg-blue-400'} rounded-full`}
+                <motion.div
+                  className="w-2 h-2 bg-blue-400 rounded-full"
                   animate={{ y: [0, -6, 0] }}
                   transition={{ repeat: Infinity, duration: 0.8, delay: 0.2 }}
                 />
-                <motion.div 
-                  className={`w-2 h-2 ${theme === 'dark' ? 'bg-blue-500' : 'bg-blue-400'} rounded-full`}
+                <motion.div
+                  className="w-2 h-2 bg-blue-400 rounded-full"
                   animate={{ y: [0, -6, 0] }}
                   transition={{ repeat: Infinity, duration: 0.8, delay: 0.4 }}
                 />
@@ -328,34 +374,30 @@ const ChatBot = () => {
             </div>
           </motion.div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
-      
+
       {/* Input Form */}
       <motion.form
         onSubmit={handleSendMessage}
-        className={`border-t ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'} p-4 shadow-lg transition-colors duration-300`}
+        className="border-t border-gray-200 bg-white p-4 shadow-lg transition-colors duration-300"
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.5 }}
       >
-        <div className="flex gap-3 max-w-4xl mx-auto">
-          <div className="relative flex-1">
+        <div className="flex space-x-3">
+          <div className="flex-1 border border-gray-200 rounded-xl shadow-sm bg-white overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500">
             <input
               ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
-              className={`w-full py-3 px-5 border ${
-                theme === 'dark' 
-                  ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400' 
-                  : 'border-gray-300 bg-gray-50 text-gray-900'
-              } rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 transition-all duration-300`}
+              className="w-full p-3 focus:outline-none resize-none text-gray-900"
             />
             {input.length > 0 && (
-              <motion.span 
+              <motion.span
                 className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -364,27 +406,23 @@ const ChatBot = () => {
                 {input.length}
               </motion.span>
             )}
+            <motion.button
+              type="submit"
+              className="p-3 rounded-xl transition-all h-12 flex items-center justify-center shadow-md hover:shadow-lg text-blue-500 ml-300"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              disabled={!input.trim() || isTyping}
+            >
+              {isTyping ? (
+                <RefreshCw size={20} className="animate-spin" />
+              ) : (
+                <Send size={20} />
+              )}
+            </motion.button>
           </div>
-          <motion.button
-            type="submit"
-            className={`${
-              theme === 'dark'
-                ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
-                : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
-            } text-white p-3 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-md`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            disabled={!input.trim() || isTyping}
-          >
-            {isTyping ? (
-              <RefreshCw size={20} className="animate-spin" />
-            ) : (
-              <Send size={20} />
-            )}
-          </motion.button>
         </div>
       </motion.form>
-      
+
       {/* Custom scrollbar styles */}
       <style jsx global>{`
         /* Custom scrollbar */
@@ -398,18 +436,7 @@ const ChatBot = () => {
         .scrollbar-light::-webkit-scrollbar-track {
           background-color: rgba(229, 231, 235, 0.5);
         }
-        
-        .scrollbar-dark::-webkit-scrollbar {
-          width: 6px;
-        }
-        .scrollbar-dark::-webkit-scrollbar-thumb {
-          background-color: rgba(75, 85, 99, 0.5);
-          border-radius: 3px;
-        }
-        .scrollbar-dark::-webkit-scrollbar-track {
-          background-color: rgba(31, 41, 55, 0.5);
-        }
-        
+
         /* Typography for markdown in messages */
         .prose-light h1, .prose-light h2, .prose-light h3 {
           color: #1f2937;
@@ -417,21 +444,9 @@ const ChatBot = () => {
           margin-top: 1.5em;
           margin-bottom: 0.5em;
         }
-        
-        .prose-dark h1, .prose-dark h2, .prose-dark h3 {
-          color: #f3f4f6;
-          font-weight: 600;
-          margin-top: 1.5em;
-          margin-bottom: 0.5em;
-        }
-        
+
         .prose-light a {
           color: #2563eb;
-          text-decoration: none;
-        }
-        
-        .prose-dark a {
-          color: #60a5fa;
           text-decoration: none;
         }
       `}</style>

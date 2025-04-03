@@ -117,6 +117,45 @@ const DigitalClock = () => {
   );
 };
 
+// Full-Page Loading Component
+const FullPageLoading = () => {
+  return (
+    <div className="fixed inset-0 flex flex-col justify-center items-center bg-white bg-opacity-80 z-50">
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 120 }}
+        className="bg-blue-50 p-8 rounded-2xl shadow-2xl border border-blue-200 flex flex-col items-center"
+      >
+        <RNSLoadingSpinner />
+        <motion.h3 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="mt-4 text-xl font-semibold text-blue-800">
+          Loading Attendance Data
+        </motion.h3>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-gray-600 mt-2 text-center max-w-sm">
+          Please wait while we fetch your attendance records from the server
+        </motion.p>
+        
+        {/* Loading progress animation */}
+        <motion.div 
+          initial={{ width: "0%" }}
+          animate={{ width: "100%" }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="h-1 bg-blue-500 rounded-full mt-4 self-start"
+          style={{ width: "100%" }}
+        />
+      </motion.div>
+    </div>
+  );
+};
+
 const AttendanceTracker = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [user, setUser] = useState(null);
@@ -259,6 +298,9 @@ const AttendanceTracker = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white p-6">
+      {/* Full Page Loading Overlay */}
+      {isLoading && <FullPageLoading />}
+
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -306,16 +348,8 @@ const AttendanceTracker = () => {
             className="flex flex-col items-center space-y-3"
           >
             <DigitalClock />
-            
           </motion.div>
         </div>
-
-        {/* Loading Spinner */}
-        {isLoading && (
-          <div className="flex justify-center items-center">
-            <RNSLoadingSpinner />
-          </div>
-        )}
 
         {/* Time Calculations */}
         <div className="grid grid-cols-3 gap-4 mb-6 text-center">

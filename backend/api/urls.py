@@ -34,4 +34,6 @@ urlpatterns = [
      
      #a
      path('generate-content/', generate_content, name='generate_content'),
+     path('save-content/',save_content, name='save_content'),
+    path('get-saved-contents/',get_saved_contents, name='get_saved_contents'),
 ]
