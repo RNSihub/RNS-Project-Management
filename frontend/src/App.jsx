@@ -12,6 +12,9 @@ import ProjectConversationApp from "./pages/Projects";
 import ChatBot from "./pages/AI/Chatbot"; // Updated import to PascalCase
 import ContentGenerator from "./pages/AI/ContentGene"; // Updated import to PascalCase
 import TextToSpeech from "./pages/TextTools/TTS"; // Updated import to PascalCase
+import SpeechToText from "./pages/TextTools/STT"; // Updated import to PascalCase
+import DailScrumReportCreator from "./pages/Report/mom";
+import DailyScruReportCreator from "./pages/Report/daily-report";
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -47,6 +50,9 @@ const App = () => {
           <Route path="/chatbot" element={<ChatBot />}/>
           <Route path="/content-generation" element={<ContentGenerator />}/>
           <Route path="/text-to-speech" element={<TextToSpeech />}/>
+          <Route path="/speech-to-text" element={<SpeechToText />}/>
+          <Route path="/daily-scrum-report" element={<DailScrumReportCreator />}/>
+          <Route path="/daily-report" element={<DailyScruReportCreator />}/>
 
         </Routes>
       </div>

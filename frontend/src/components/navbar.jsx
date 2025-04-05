@@ -26,7 +26,10 @@ import {
   Briefcase,
   ChevronDown,
   ArrowDown,
-  MoreHorizontal
+  MoreHorizontal,
+  FileSearch2,
+  FileSearchIcon,
+  Mail
 } from 'lucide-react';
 
 const Sidebar = ({ user, onLogout }) => {
@@ -160,6 +163,24 @@ const Sidebar = ({ user, onLogout }) => {
       label: 'Content Generation', 
       path: '/content-generation',
       category: 'AI Assistant'
+    },
+    { 
+      icon: <FileText size={20} />, 
+      label: 'MOM Creator', 
+      path: '/daily-scrum-report',
+      category: 'Main Tools'
+    },
+    { 
+      icon: <FileSearch2 size={20} />, 
+      label: 'Daily Report Creator', 
+      path: '/daily-report',
+      category: 'Main Tools'
+    },
+    { 
+      icon: <Mail size={20} />, 
+      label: 'Mail Drafter', 
+      path: '/mail-drafter',
+      category: 'Main Tools'
     },
     { 
       icon: <Headphones size={20} />, 
