@@ -163,7 +163,7 @@ def generate_user_story_and_acceptance_criteria(requirement_text):
 
         Please format your response as follows:
         1. User Story: Follow the format "As a [type of user], I want [an action] so that [benefit/value]"
-        2. Acceptance Criteria: Provide a numbered list of specific, testable criteria that must be met for the story to be considered complete.
+         Acceptance Criteria: Provide a numbered list of specific, testable criteria that must be met for the story to be considered complete.
 
         Make sure the acceptance criteria are:
         - Clear and unambiguous

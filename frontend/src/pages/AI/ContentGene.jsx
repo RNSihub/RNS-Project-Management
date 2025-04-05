@@ -15,6 +15,8 @@ const ContentGenerator = () => {
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [showTour, setShowTour] = useState(false);
   const [tourStep, setTourStep] = useState(0);
+  const [outputFormat, setOutputFormat] = useState('clean');
+  const [selectedSavedContent, setSelectedSavedContent] = useState(null);
 
   const inspirationExamples = [
     {
@@ -32,6 +34,13 @@ const ContentGenerator = () => {
     {
       title: "Create a multi-step onboarding wizard",
     }
+  ];
+
+  // Output formatting options
+  const formatOptions = [
+    { id: 'clean', name: 'Clean Format', description: 'Clear text without special characters' },
+    { id: 'markdown', name: 'Markdown', description: 'Properly formatted with headings and emphasis' },
+    { id: 'structured', name: 'Structured', description: 'Well-organized with clear sections' }
   ];
 
   useEffect(() => {
@@ -98,6 +107,54 @@ const ContentGenerator = () => {
     }
   }, []);
 
+  // Format the generated content based on selected output format
+  const formatContent = (content, format) => {
+    if (!content) return content;
+
+    let formattedContent = {...content};
+
+    switch(format) {
+      case 'clean':
+        // Remove any markdown characters like * # etc.
+        formattedContent.user_story = content.user_story.replace(/[*#_~`]/g, '');
+        formattedContent.acceptance_criteria = content.acceptance_criteria.map(
+          criteria => criteria.replace(/[*#_~`]/g, '')
+        );
+        break;
+
+      case 'markdown':
+        // Add proper markdown formatting
+        formattedContent.user_story = content.user_story
+          .replace(/^As a/i, "**As a")
+          .replace(/I want to/, "** I want to")
+          .replace(/so that/, "so that");
+
+        formattedContent.acceptance_criteria = content.acceptance_criteria.map(
+          (criteria, index) => `**${index + 1}.** ${criteria}`
+        );
+        break;
+
+      case 'structured':
+        // Create well-structured content with clear sections
+        const parts = content.user_story.match(/As a (.*?), I want to (.*?) so that (.*)/i);
+
+        if (parts && parts.length >= 4) {
+          formattedContent.user_story = `ROLE: ${parts[1]}\nGOAL: ${parts[2]}\nBENEFIT: ${parts[3]}`;
+        }
+
+        formattedContent.acceptance_criteria = content.acceptance_criteria.map(
+          (criteria, index) => `CRITERION ${index + 1}: ${criteria}`
+        );
+        break;
+
+      default:
+        // No formatting changes
+        break;
+    }
+
+    return formattedContent;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!requirement.trim()) {
@@ -126,7 +183,8 @@ const ContentGenerator = () => {
       }
 
       const data = await response.json();
-      setGeneratedContent(data);
+      // Format the content based on selected output format
+      setGeneratedContent(formatContent(data, outputFormat));
 
       confetti({
         particleCount: 100,
@@ -156,6 +214,7 @@ const ContentGenerator = () => {
         body: JSON.stringify({
           requirement,
           content: generatedContent,
+          format: outputFormat, // Save the format used
           user_id: localStorage.getItem('userId') || 'anonymous'
         }),
       });
@@ -192,7 +251,17 @@ const ContentGenerator = () => {
   };
 
   const handleCopy = () => {
-    const content = `User Story:\n${generatedContent.user_story}\n\nAcceptance Criteria:\n${generatedContent.acceptance_criteria.map((c, i) => `${i+1}. ${c}`).join('\n')}`;
+    let content = '';
+
+    // Format the copied content based on the selected output format
+    if (outputFormat === 'clean') {
+      content = `User Story:\n${generatedContent.user_story}\n\nAcceptance Criteria:\n${generatedContent.acceptance_criteria.map((c, i) => `${i+1}. ${c}`).join('\n')}`;
+    } else if (outputFormat === 'markdown') {
+      content = `## User Story\n${generatedContent.user_story}\n\n## Acceptance Criteria\n${generatedContent.acceptance_criteria.map((c, i) => `${i+1}. ${c}`).join('\n')}`;
+    } else if (outputFormat === 'structured') {
+      content = `USER STORY\n${generatedContent.user_story}\n\nACCEPTANCE CRITERIA\n${generatedContent.acceptance_criteria.map((c, i) => `${i+1}. ${c}`).join('\n')}`;
+    }
+
     navigator.clipboard.writeText(content);
     setCopied(true);
 
@@ -230,11 +299,79 @@ const ContentGenerator = () => {
     }
   };
 
+  // Function to convert formatted content back to display format
+  const displayFormattedContent = (content, format, type) => {
+    if (!content || !content[type]) return null;
+
+    if (type === 'user_story') {
+      switch(format) {
+        case 'structured':
+          return (
+            <div className="space-y-2">
+              {content[type].split('\n').map((line, idx) => {
+                const [label, text] = line.split(': ');
+                return (
+                  <div key={idx} className="flex">
+                    <span className="font-bold w-24">{label}:</span>
+                    <span>{text}</span>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        case 'markdown':
+          return (
+            <div dangerouslySetInnerHTML={{
+              __html: content[type]
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            }} />
+          );
+        default:
+          return <p>{content[type]}</p>;
+      }
+    } else if (type === 'acceptance_criteria') {
+      return (
+        <ul className="list-decimal pl-5">
+          {content[type].map((criterion, index) => {
+            if (format === 'structured') {
+              const [label, text] = criterion.split(': ');
+              return (
+                <li key={index} className="mb-2">
+                  <span className="font-bold">{label}:</span> {text}
+                </li>
+              );
+            } else if (format === 'markdown') {
+              return (
+                <li key={index} className="mb-2" dangerouslySetInnerHTML={{
+                  __html: criterion.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                }} />
+              );
+            } else {
+              return (
+                <li key={index} className="mb-2">{criterion}</li>
+              );
+            }
+          })}
+        </ul>
+      );
+    }
+
+    return null;
+  };
+
   const glassPanel = 'bg-white/80 backdrop-blur-md border border-gray-200/50';
 
   const card3dHover = {
     rest: { scale: 1, transition: { duration: 0.2 } },
     hover: { scale: 1.02, transition: { duration: 0.2 } }
+  };
+
+  const handleSavedContentClick = (content) => {
+    setSelectedSavedContent(content);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedSavedContent(null);
   };
 
   return (
@@ -358,6 +495,32 @@ const ContentGenerator = () => {
                       required
                     />
                   </motion.div>
+                </div>
+
+                {/* Format selection buttons */}
+                <div className="mb-4">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Output Format:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {formatOptions.map((format) => (
+                      <motion.button
+                        key={format.id}
+                        type="button"
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => setOutputFormat(format.id)}
+                        className={`text-xs px-3 py-2 rounded-lg transition-colors ${
+                          outputFormat === format.id
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                        }`}
+                      >
+                        <div className="text-left">
+                          <div className="font-bold">{format.name}</div>
+                          <div className="text-xs opacity-80">{format.description}</div>
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-3">
@@ -488,175 +651,283 @@ const ContentGenerator = () => {
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold text-gray-800">Generated Content</h2>
                     <div className="flex space-x-2">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleCopy}
-                        className={`px-3 py-1.5 rounded-xl text-sm font-medium flex items-center ${
-                          copied
-                            ? 'bg-green-500 text-white'
-                            : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-                        } transition-colors`}
-                      >
-                        {copied ? (
-                          <span className="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            Copied
-                          </span>
-                        ) : (
-                          <span className="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                            Copy
-                          </span>
-                        )}
-                      </motion.button>
+  <motion.button
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    onClick={handleCopy}
+    className={`flex items-center px-2.5 py-1.5 text-sm rounded-lg ${
+      copied
+        ? 'bg-green-100 text-green-800 border border-green-200'
+        : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
+    }`}
+  >
+    {copied ? (
+      <>
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+        <span>Copied!</span>
+      </>
+    ) : (
+      <>
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+        <span>Copy</span>
+      </>
+    )}
+  </motion.button>
 
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleSave}
-                        className="px-3 py-1.5 rounded-xl text-sm font-medium flex items-center bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                        </svg>
-                        Save
-                      </motion.button>
-                    </div>
+  <motion.button
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    onClick={handleSave}
+    className="flex items-center px-2.5 py-1.5 text-sm rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-200"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+    </svg>
+    <span>Save</span>
+  </motion.button>
+</div>
                   </div>
 
-                  <div className="mb-4 border-b border-gray-200">
-                    <div className="flex">
-                      <motion.button
-                        onClick={() => setActiveTab('story')}
-                        whileHover={{ y: -2 }}
-                        className="py-2 px-4 font-medium text-sm relative text-gray-600"
-                      >
+                  <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
                         User Story
-                        {activeTab === 'story' && (
-                          <motion.div
-                            layoutId="active-tab-indicator"
-                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
-                          />
-                        )}
-                      </motion.button>
-                      <motion.button
-                        onClick={() => setActiveTab('criteria')}
-                        whileHover={{ y: -2 }}
-                        className="py-2 px-4 font-medium text-sm relative text-gray-600"
-                      >
-                        Acceptance Criteria
-                        {activeTab === 'criteria' && (
-                          <motion.div
-                            layoutId="active-tab-indicator"
-                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
-                          />
-                        )}
-                      </motion.button>
+                      </div>
+                    </div>
+                    <div className="mb-2 text-sm sm:text-base">
+                      {displayFormattedContent(generatedContent, outputFormat, 'user_story')}
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    {activeTab === 'story' && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="p-4 rounded-xl bg-white/70 border-gray-300 text-gray-900"
-                      >
-                        <h3 className="text-lg font-semibold mb-2">User Story</h3>
-                        <p>{generatedContent.user_story}</p>
-                      </motion.div>
-                    )}
-                    {activeTab === 'criteria' && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="p-4 rounded-xl bg-white/70 border-gray-300 text-gray-900"
-                      >
-                        <h3 className="text-lg font-semibold mb-2">Acceptance Criteria</h3>
-                        <ul className="list-decimal pl-5">
-                          {generatedContent.acceptance_criteria.map((criterion, index) => (
-                            <li key={index} className="mb-2">
-                              {criterion}
-                            </li>
-                          ))}
-                        </ul>
-                      </motion.div>
-                    )}
+                  <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+                        Acceptance Criteria
+                      </div>
+                    </div>
+                    <div className="text-sm sm:text-base">
+                      {displayFormattedContent(generatedContent, outputFormat, 'acceptance_criteria')}
+                    </div>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className={`${viewMode === 'focus' ? 'hidden' : 'lg:block'} lg:col-span-2 rounded-xl shadow-lg ${glassPanel}`}
-          >
-            <div className="p-6">
-              <h2 className="text-xl font-bold mb-4 text-gray-800">
-                Saved Content
-              </h2>
-              {savedContents.length > 0 ? (
-                <ul className="space-y-4">
-                  {savedContents.map((content) => (
-                    <motion.li
-                      key={content.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="p-4 rounded-xl bg-white/70 border-gray-300 text-gray-900"
-                    >
-                      <h3 className="text-lg font-semibold mb-2">{content.requirement}</h3>
-                      <p className="text-sm text-gray-500">{new Date(content.timestamp).toLocaleString()}</p>
-                      <p className="mt-2">{content.content.user_story}</p>
-                    </motion.li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-500">
-                  No saved content yet.
-                </p>
-              )}
-            </div>
-          </motion.div>
-        </div>
-
-        {showTour && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          {viewMode !== 'focus' && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="lg:col-span-2 rounded-xl shadow-lg overflow-hidden"
+              layout
             >
-              <h2 className="text-xl font-bold mb-4">Welcome to AI Content Builder!</h2>
-              <p className="mb-4">
-                {tourStep === 0 && 'Step 1: Enter your requirement in the text area.'}
-                {tourStep === 1 && 'Step 2: Click "Generate Content" to create your user story and acceptance criteria.'}
-                {tourStep === 2 && 'Step 3: Copy or save the generated content.'}
-                {tourStep === 3 && 'Step 4: Use focus mode to minimize distractions.'}
-              </p>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={nextTourStep}
-                className="px-4 py-2 bg-blue-500 text-white rounded-xl"
-              >
-                {tourStep < 3 ? 'Next' : 'Got it!'}
-              </motion.button>
+              <div className="bg-gradient-to-r from-indigo-600 to-blue-500 p-4">
+                <h2 className="text-lg font-bold text-white flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                  </svg>
+                  Saved Content Library
+                </h2>
+              </div>
+
+              <div className={`max-h-[calc(100vh-220px)] overflow-y-auto ${glassPanel}`}>
+                {savedContents.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-8 text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <h3 className="text-lg font-medium text-gray-800 mb-1">No saved content yet</h3>
+                    <p className="text-sm text-gray-500 mb-3">
+                      Your saved content will appear here
+                    </p>
+                    <button
+                      onClick={() => setShowTour(true)}
+                      className="text-sm px-3 py-1 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-800 transition-colors"
+                    >
+                      Learn how to use
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-3">
+                    {savedContents.map((savedItem, index) => (
+                      <motion.div
+                        key={savedItem.id || index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="bg-white mb-3 rounded-lg border border-gray-200 overflow-hidden"
+                        whileHover={{
+                          scale: 1.02,
+                          boxShadow: "0px 3px 10px rgba(0, 0, 0, 0.1)",
+                        }}
+                        onClick={() => handleSavedContentClick(savedItem)}
+                      >
+                        <div className="p-3">
+                          <h3 className="font-semibold text-gray-800 mb-1 line-clamp-1">
+                            {savedItem.requirement}
+                          </h3>
+                          <div className="text-xs text-gray-500 mb-2">
+                            {new Date(savedItem.timestamp).toLocaleDateString()} · {new Date(savedItem.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                          <div className="text-sm text-gray-700 mb-2 line-clamp-2">
+                            {savedItem.content?.user_story}
+                          </div>
+                          <div className="flex space-x-2">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              User Story
+                            </span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                              {savedItem.content?.acceptance_criteria?.length || 0} Criteria
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      <AnimatePresence>
+        {showTour && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+            onClick={() => setShowTour(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", damping: 20 }}
+              className="bg-white rounded-xl shadow-2xl max-w-md w-full m-4 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-1">
+                <img
+                  src={`/api/placeholder/600/300`}
+                  alt="Feature tour"
+                  className="w-full h-40 object-cover rounded-lg"
+                />
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-2">
+                  {tourStep === 0 && "Welcome to AI Content Builder"}
+                  {tourStep === 1 && "Generate Feature Content"}
+                  {tourStep === 2 && "Choose Output Formats"}
+                  {tourStep === 3 && "Save Your Content"}
+                  {tourStep === 4 && "Build Your Library"}
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {tourStep === 0 && "Let's learn how to create professional user stories and acceptance criteria in seconds with our AI-powered tool."}
+                  {tourStep === 1 && "Type in your feature requirement or choose from our suggestions. The more details you provide, the better the results."}
+                  {tourStep === 2 && "Choose from different output formats for your content: clean text, markdown, or structured format."}
+                  {tourStep === 3 && "Save your generated content to your library for future reference or copy it directly to use in your project."}
+                  {tourStep === 4 && "Access all your saved content in the library panel. You can easily reference and reuse previously created items."}
+                </p>
+                <div className="flex justify-between items-center">
+                  <div className="flex space-x-1">
+                    {[0, 1, 2, 3, 4].map((step) => (
+                      <div
+                        key={step}
+                        className={`w-2 h-2 rounded-full ${
+                          step === tourStep ? "bg-blue-600" : "bg-gray-300"
+                        }`}
+                      ></div>
+                    ))}
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => setShowTour(false)}
+                      className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg transition-colors"
+                    >
+                      Skip
+                    </button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={nextTourStep}
+                      className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      {tourStep < 4 ? "Next" : "Get Started"}
+                    </motion.button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedSavedContent && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+            onClick={handleCloseModal}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", damping: 20 }}
+              className="bg-white rounded-xl shadow-2xl max-w-md w-full m-4 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="fixed inset-0 flex items-center justify-center bg-gray-85">
+  <div className="bg-white rounded-lg shadow-lg overflow-y-auto max-h-[80vh] w-full max-w-lg p-6">
+    <h3 className="text-xl font-bold text-gray-800 mb-4">Saved Content Details</h3>
+    <div className="mb-4">
+      <h4 className="text-lg font-semibold text-gray-700 mb-2">Requirement</h4>
+      <p className="text-gray-600">{selectedSavedContent.requirement}</p>
+    </div>
+    <div className="mb-4">
+      <h4 className="text-lg font-semibold text-gray-700 mb-2">User Story</h4>
+      <div className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mb-2">
+        User Story
+      </div>
+      <div className="mb-2 text-sm sm:text-base">
+        {displayFormattedContent(selectedSavedContent.content, outputFormat, 'user_story')}
+      </div>
+    </div>
+    <div className="mb-4">
+      <h4 className="text-lg font-semibold text-gray-700 mb-2">Acceptance Criteria</h4>
+      <div className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded mb-2">
+        Acceptance Criteria
+      </div>
+      <div className="text-sm sm:text-base">
+        {displayFormattedContent(selectedSavedContent.content, outputFormat, 'acceptance_criteria')}
+      </div>
+    </div>
+    <div className="flex justify-end">
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={handleCloseModal}
+        className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg transition-colors"
+      >
+        Close
+      </motion.button>
+    </div>
+  </div>
+</div>
+
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
