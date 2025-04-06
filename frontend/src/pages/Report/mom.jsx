@@ -39,7 +39,10 @@ const DailyScrumReportCreator = () => {
               size: 25,
               type: WidthType.PERCENTAGE,
             },
-            children: [new Paragraph(parts[0] || '')],
+            children: [new Paragraph({
+              text: parts[0] || '',
+              size: 24 // Increased text size
+            })],
             borders: {
               top: { style: BorderStyle.SINGLE, size: 1 },
               bottom: { style: BorderStyle.SINGLE, size: 1 },
@@ -52,7 +55,10 @@ const DailyScrumReportCreator = () => {
               size: 20,
               type: WidthType.PERCENTAGE,
             },
-            children: [new Paragraph(parts[1] || '')],
+            children: [new Paragraph({
+              text: parts[1] || '',
+              size: 24 // Increased text size
+            })],
             borders: {
               top: { style: BorderStyle.SINGLE, size: 1 },
               bottom: { style: BorderStyle.SINGLE, size: 1 },
@@ -65,7 +71,10 @@ const DailyScrumReportCreator = () => {
               size: 20,
               type: WidthType.PERCENTAGE,
             },
-            children: [new Paragraph(parts[2] || '')],
+            children: [new Paragraph({
+              text: parts[2] || '',
+              size: 24 // Increased text size
+            })],
             borders: {
               top: { style: BorderStyle.SINGLE, size: 1 },
               bottom: { style: BorderStyle.SINGLE, size: 1 },
@@ -78,7 +87,10 @@ const DailyScrumReportCreator = () => {
               size: 20,
               type: WidthType.PERCENTAGE,
             },
-            children: [new Paragraph(parts[3] || '')],
+            children: [new Paragraph({
+              text: parts[3] || '',
+              size: 24 // Increased text size
+            })],
             borders: {
               top: { style: BorderStyle.SINGLE, size: 1 },
               bottom: { style: BorderStyle.SINGLE, size: 1 },
@@ -91,7 +103,10 @@ const DailyScrumReportCreator = () => {
               size: 15,
               type: WidthType.PERCENTAGE,
             },
-            children: [new Paragraph(parts[4] || '')],
+            children: [new Paragraph({
+              text: parts[4] || '',
+              size: 24 // Increased text size
+            })],
             borders: {
               top: { style: BorderStyle.SINGLE, size: 1 },
               bottom: { style: BorderStyle.SINGLE, size: 1 },
@@ -104,6 +119,10 @@ const DailyScrumReportCreator = () => {
     });
 
     const taskBacklogTable = new Table({
+      width: {
+        size: 100,
+        type: WidthType.PERCENTAGE,
+      },
       rows: [
         new TableRow({
           children: [
@@ -116,6 +135,7 @@ const DailyScrumReportCreator = () => {
                 text: "Goal Name",
                 heading: HeadingLevel.HEADING_4,
                 alignment: AlignmentType.CENTER,
+                size: 24 // Increased text size
               })],
               borders: {
                 top: { style: BorderStyle.SINGLE, size: 2 },
@@ -133,6 +153,7 @@ const DailyScrumReportCreator = () => {
                 text: "Assignee",
                 heading: HeadingLevel.HEADING_4,
                 alignment: AlignmentType.CENTER,
+                size: 24 // Increased text size
               })],
               borders: {
                 top: { style: BorderStyle.SINGLE, size: 2 },
@@ -150,6 +171,7 @@ const DailyScrumReportCreator = () => {
                 text: "Status",
                 heading: HeadingLevel.HEADING_4,
                 alignment: AlignmentType.CENTER,
+                size: 24 // Increased text size
               })],
               borders: {
                 top: { style: BorderStyle.SINGLE, size: 2 },
@@ -167,6 +189,7 @@ const DailyScrumReportCreator = () => {
                 text: "Blockers",
                 heading: HeadingLevel.HEADING_4,
                 alignment: AlignmentType.CENTER,
+                size: 24 // Increased text size
               })],
               borders: {
                 top: { style: BorderStyle.SINGLE, size: 2 },
@@ -184,6 +207,7 @@ const DailyScrumReportCreator = () => {
                 text: "Deadline",
                 heading: HeadingLevel.HEADING_4,
                 alignment: AlignmentType.CENTER,
+                size: 24 // Increased text size
               })],
               borders: {
                 top: { style: BorderStyle.SINGLE, size: 2 },
@@ -203,7 +227,9 @@ const DailyScrumReportCreator = () => {
       .split('\n')
       .map(item => item.trim())
       .filter(item => item)
-      .map(item => new Paragraph(item));
+      .map(item => new Paragraph({
+        children: [new TextRun({ text: item, size: 24 })], // Increased text size
+      }));
 
     // Create yesterday updates list with proper formatting
     const yesterdayUpdates = formData.yesterdayUpdates
@@ -211,7 +237,7 @@ const DailyScrumReportCreator = () => {
       .map(item => item.trim())
       .filter(item => item)
       .map(item => new Paragraph({
-        children: [new TextRun({ text: "○ ", bold: true }), new TextRun(item)]
+        children: [new TextRun({ text: "• ", bold: true, size: 24 }), new TextRun({ text: item, size: 24 })] // Increased text size
       }));
 
     // Create today plans list with proper formatting
@@ -220,7 +246,7 @@ const DailyScrumReportCreator = () => {
       .map(item => item.trim())
       .filter(item => item)
       .map(item => new Paragraph({
-        children: [new TextRun({ text: "○ ", bold: true }), new TextRun(item)]
+        children: [new TextRun({ text: "• ", bold: true, size: 24 }), new TextRun({ text: item, size: 24 })] // Increased text size
       }));
 
     // Create blockers list with proper formatting
@@ -229,7 +255,7 @@ const DailyScrumReportCreator = () => {
       .map(item => item.trim())
       .filter(item => item)
       .map(item => new Paragraph({
-        children: [new TextRun({ text: "○ ", bold: true }), new TextRun(item)]
+        children: [new TextRun({ text: "• ", bold: true, size: 24 }), new TextRun({ text: item, size: 24 })] // Increased text size
       }));
 
     // Create impediments list with proper formatting
@@ -238,7 +264,7 @@ const DailyScrumReportCreator = () => {
       .map(item => item.trim())
       .filter(item => item)
       .map(item => new Paragraph({
-        children: [new TextRun({ text: "● ", bold: true }), new TextRun(item)]
+        children: [new TextRun({ text: "• ", bold: true, size: 24 }), new TextRun({ text: item, size: 24 })] // Increased text size
       }));
 
     // Create actions to take list with proper formatting
@@ -247,191 +273,189 @@ const DailyScrumReportCreator = () => {
       .map(item => item.trim())
       .filter(item => item)
       .map(item => new Paragraph({
-        children: [new TextRun({ text: "● ", bold: true }), new TextRun(item)]
+        children: [new TextRun({ text: "• ", bold: true, size: 24 }), new TextRun({ text: item, size: 24 })] // Increased text size
       }));
 
     // Create the document
     const doc = new Document({
-  sections: [{
-    properties: {},
-    children: [
-      // Header with Team Name
-      new Paragraph({
-        text: "Daily Scrum Meeting Report (Minutes of Meeting)",
-        heading: HeadingLevel.TITLE,
-        alignment: AlignmentType.CENTER,
+      sections: [{
+        properties: {},
         children: [
-          new TextRun({
-            text: "Daily Scrum Meeting Report (Minutes of Meeting)",
-            size: 22 // Adjust the size as needed
-          })
-        ]
-      }),
-      new Paragraph(""),
+          // Header with Team Name
+          new Paragraph({
+            heading: HeadingLevel.TITLE,
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text: "Daily Scrum Meeting Report (Minutes of Meeting)",
+                size: 28 // Increased text size
+              })
+            ]
+          }),
+          new Paragraph(""),
 
-      // Team Name
-      new Paragraph({
-        children: [
-          new TextRun({ text: "Team Name: ", bold: true, size: 20 }), // Adjust the size as needed
-          new TextRun({ text: formData.teamName, size: 20 }) // Adjust the size as needed
-        ]
-      }),
-      new Paragraph(""),
+          // Team Name
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Team Name: ", bold: true, size: 24 }), // Increased text size
+              new TextRun({ text: formData.teamName, size: 24 }) // Increased text size
+            ]
+          }),
+          new Paragraph(""),
 
-      // Date
-      new Paragraph({
-        children: [
-          new TextRun({ text: "Date: ", bold: true, size: 20 }), // Adjust the size as needed
-          new TextRun({ text: formData.date, size: 20 }) // Adjust the size as needed
-        ]
-      }),
-      new Paragraph(""),
+          // Date
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Date: ", bold: true, size: 24 }), // Increased text size
+              new TextRun({ text: formData.date, size: 24 }) // Increased text size
+            ]
+          }),
+          new Paragraph(""),
 
-      // Development Team Attendees
-      new Paragraph({
-        children: [
-          new TextRun({ text: "Development Team Attendees: ", bold: true, size: 20 }) // Adjust the size as needed
-        ]
-      }),
-      ...attendeesList.map(attendee => [
-        new Paragraph({
-          children: [
-            new TextRun({ text: attendee, size: 20 }) // Adjust the size as needed
-          ]
-        }),
-        new Paragraph("")
-      ]),
-      new Paragraph(""),
+          // Development Team Attendees
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Development Team Attendees: ", bold: true, size: 24 }) // Increased text size
+            ]
+          }),
+          ...attendeesList.map(attendee => [
+            new Paragraph({
+              children: [
+                new TextRun({ text: attendee, size: 24 }) // Increased text size
+              ]
+            }),
+            new Paragraph("")
+          ]),
+          new Paragraph(""),
 
-      // Meeting Duration
-      new Paragraph({
-        children: [
-          new TextRun({ text: "Meeting Duration: ", bold: true, size: 20 }), // Adjust the size as needed
-          new TextRun({ text: `[${formData.startTime} – ${formData.endTime}]`, size: 20 }) // Adjust the size as needed
-        ]
-      }),
-      new Paragraph(""),
+          // Meeting Duration
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Meeting Duration: ", bold: true, size: 24 }), // Increased text size
+              new TextRun({ text: `[${formData.startTime} – ${formData.endTime}]`, size: 24 }) // Increased text size
+            ]
+          }),
+          new Paragraph(""),
 
-      // 1. Agenda
-      new Paragraph({
-        children: [
-          new TextRun({ text: "1. ", bold: true, size: 20 }), // Adjust the size as needed
-          new TextRun({ text: "Agenda:", bold: true, size: 20 }) // Adjust the size as needed
-        ]
-      }),
-      new Paragraph({
-        children: [
-          new TextRun({ text: formData.agenda, size: 20 }) // Adjust the size as needed
-        ]
-      }),
-      new Paragraph(""),
+          // 1. Agenda
+          new Paragraph({
+            children: [
+              new TextRun({ text: "1. ", bold: true, size: 24 }), // Increased text size
+              new TextRun({ text: "Agenda:", bold: true, size: 24 }) // Increased text size
+            ]
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: formData.agenda, size: 24 }) // Increased text size
+            ]
+          }),
+          new Paragraph(""),
 
-      // 2. Scrum Updates
-      new Paragraph({
-        children: [
-          new TextRun({ text: "2. ", bold: true, size: 20 }), // Adjust the size as needed
-          new TextRun({ text: "Scrum Updates", bold: true, size: 20 }) // Adjust the size as needed
-        ]
-      }),
-      new Paragraph(""),
+          // 2. Scrum Updates
+          new Paragraph({
+            children: [
+              new TextRun({ text: "2. ", bold: true, size: 24 }), // Increased text size
+              new TextRun({ text: "Scrum Updates", bold: true, size: 24 }) // Increased text size
+            ]
+          }),
+          new Paragraph(""),
 
-      // What did you do yesterday?
-      new Paragraph({
-        children: [
-          new TextRun({ text: "What did you do yesterday?", bold: true, size: 20 }) // Adjust the size as needed
-        ]
-      }),
-      ...yesterdayUpdates.map(update => [
-        new Paragraph({
-          children: [
-            new TextRun({ text: update, size: 20 }) // Adjust the size as needed
-          ]
-        }),
-        new Paragraph("")
-      ]),
-      new Paragraph(""),
+          // What did you do yesterday?
+          new Paragraph({
+            children: [
+              new TextRun({ text: "What did you do yesterday?", bold: true, size: 24 }) // Increased text size
+            ]
+          }),
+          ...yesterdayUpdates.map(update => [
+            new Paragraph({
+              children: [
+                new TextRun({ text: update, size: 24 }) // Increased text size
+              ]
+            }),
+            new Paragraph("")
+          ]),
+          new Paragraph(""),
 
-      // What will you do today?
-      new Paragraph({
-        children: [
-          new TextRun({ text: "What will you do today?", bold: true, size: 20 }) // Adjust the size as needed
-        ]
-      }),
-      ...todayPlans.map(plan => [
-        new Paragraph({
-          children: [
-            new TextRun({ text: plan, size: 20 }) // Adjust the size as needed
-          ]
-        }),
-        new Paragraph("")
-      ]),
-      new Paragraph(""),
+          // What will you do today?
+          new Paragraph({
+            children: [
+              new TextRun({ text: "What will you do today?", bold: true, size: 24 }) // Increased text size
+            ]
+          }),
+          ...todayPlans.map(plan => [
+            new Paragraph({
+              children: [
+                new TextRun({ text: plan, size: 24 }) // Increased text size
+              ]
+            }),
+            new Paragraph("")
+          ]),
+          new Paragraph(""),
 
-      // Are there any blockers or impediments?
-      new Paragraph({
-        children: [
-          new TextRun({ text: "Are there any blockers or impediments?", bold: true, size: 20 }) // Adjust the size as needed
-        ]
-      }),
-      ...blockersList.map(blocker => [
-        new Paragraph({
-          children: [
-            new TextRun({ text: blocker, size: 20 }) // Adjust the size as needed
-          ]
-        }),
-        new Paragraph("")
-      ]),
-      new Paragraph(""),
+          // Are there any blockers or impediments?
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Are there any blockers or impediments?", bold: true, size: 24 }) // Increased text size
+            ]
+          }),
+          ...blockersList.map(blocker => [
+            new Paragraph({
+              children: [
+                new TextRun({ text: blocker, size: 24 }) // Increased text size
+              ]
+            }),
+            new Paragraph("")
+          ]),
+          new Paragraph(""),
 
-      // 3. Task Backlog & Progress
-      new Paragraph({
-        children: [
-          new TextRun({ text: "3. ", bold: true, size: 20 }), // Adjust the size as needed
-          new TextRun({ text: "Task Backlog & Progress", bold: true, size: 20 }) // Adjust the size as needed
-        ]
-      }),
-      new Paragraph(""),
-      taskBacklogTable,
-      new Paragraph(""),
+          // 3. Task Backlog & Progress
+          new Paragraph({
+            children: [
+              new TextRun({ text: "3. ", bold: true, size: 24 }), // Increased text size
+              new TextRun({ text: "Task Backlog & Progress", bold: true, size: 24 }) // Increased text size
+            ]
+          }),
+          new Paragraph(""),
+          taskBacklogTable,
+          new Paragraph(""),
 
-      // 4. Impediments & Risks
-      new Paragraph({
-        children: [
-          new TextRun({ text: "4. ", bold: true, size: 20 }), // Adjust the size as needed
-          new TextRun({ text: "Impediments & Risks", bold: true, size: 20 }) // Adjust the size as needed
-        ]
-      }),
-      new Paragraph(""),
-      ...impedimentsList.map(impediment => [
-        new Paragraph({
-          children: [
-            new TextRun({ text: impediment, size: 20 }) // Adjust the size as needed
-          ]
-        }),
-        new Paragraph("")
-      ]),
-      new Paragraph(""),
+          // 4. Impediments & Risks
+          new Paragraph({
+            children: [
+              new TextRun({ text: "4. ", bold: true, size: 24 }), // Increased text size
+              new TextRun({ text: "Impediments & Risks", bold: true, size: 24 }) // Increased text size
+            ]
+          }),
+          new Paragraph(""),
+          ...impedimentsList.map(impediment => [
+            new Paragraph({
+              children: [
+                new TextRun({ text: impediment, size: 24 }) // Increased text size
+              ]
+            }),
+            new Paragraph("")
+          ]),
+          new Paragraph(""),
 
-      // 5. Actions To Take
-      new Paragraph({
-        children: [
-          new TextRun({ text: "5. ", bold: true, size: 20 }), // Adjust the size as needed
-          new TextRun({ text: "Action To Take:", bold: true, size: 20 }) // Adjust the size as needed
+          // 5. Actions To Take
+          new Paragraph({
+            children: [
+              new TextRun({ text: "5. ", bold: true, size: 24 }), // Increased text size
+              new TextRun({ text: "Action To Take:", bold: true, size: 24 }) // Increased text size
+            ]
+          }),
+          new Paragraph(""),
+          ...actionsToTakeList.map(action => [
+            new Paragraph({
+              children: [
+                new TextRun({ text: action, size: 24 }) // Increased text size
+              ]
+            }),
+            new Paragraph("")
+          ]),
         ]
-      }),
-      new Paragraph(""),
-      ...actionsToTakeList.map(action => [
-        new Paragraph({
-          children: [
-            new TextRun({ text: action, size: 20 }) // Adjust the size as needed
-          ]
-        }),
-        new Paragraph("")
-      ]),
-    ]
-  }]
-});
-
+      }]
+    });
 
     // Generate and save document
     Packer.toBlob(doc).then((blob) => {
@@ -641,7 +665,7 @@ const DailyScrumReportCreator = () => {
                 {formData.yesterdayUpdates ? (
                   <div className="pl-4">
                     {formData.yesterdayUpdates.split('\n').filter(item => item.trim()).map((item, index) => (
-                      <div key={index}>○ {item}</div>
+                      <div key={index}>• {item}</div>
                     ))}
                   </div>
                 ) : '[None specified]'}
@@ -650,7 +674,7 @@ const DailyScrumReportCreator = () => {
                 {formData.todayPlans ? (
                   <div className="pl-4">
                     {formData.todayPlans.split('\n').filter(item => item.trim()).map((item, index) => (
-                      <div key={index}>○ {item}</div>
+                      <div key={index}>• {item}</div>
                     ))}
                   </div>
                 ) : '[None specified]'}
@@ -659,10 +683,10 @@ const DailyScrumReportCreator = () => {
                 {formData.blockers ? (
                   <div className="pl-4">
                     {formData.blockers.split('\n').filter(item => item.trim()).map((item, index) => (
-                      <div key={index}>○ {item}</div>
+                      <div key={index}>• {item}</div>
                     ))}
                   </div>
-                ) : '○ N/A'}
+                ) : '• N/A'}
               </div>
             </div>
 
@@ -702,7 +726,7 @@ const DailyScrumReportCreator = () => {
               {formData.impediments ? (
                 <div className="pl-4">
                   {formData.impediments.split('\n').filter(item => item.trim()).map((item, index) => (
-                    <div key={index}>● {item}</div>
+                    <div key={index}>• {item}</div>
                   ))}
                 </div>
               ) : '[None specified]'}
@@ -713,7 +737,7 @@ const DailyScrumReportCreator = () => {
               {formData.actionsToTake ? (
                 <div className="pl-4">
                   {formData.actionsToTake.split('\n').filter(item => item.trim()).map((item, index) => (
-                    <div key={index}>● {item}</div>
+                    <div key={index}>• {item}</div>
                   ))}
                 </div>
               ) : '[None specified]'}
@@ -725,6 +749,24 @@ const DailyScrumReportCreator = () => {
     }
   };
 
+  // Function to load an example report
+  const loadExample = () => {
+    setFormData({
+      teamName: 'Team Scrum',
+      date: '2025-04-06',
+      startTime: '09:00',
+      endTime: '09:15',
+      agenda: 'Discuss Frontend, Testing, Deployment, Bug Fixing, and team availability...',
+      attendees: 'Naveen Kumar S\nAravind\nSanjay N',
+      yesterdayUpdates: 'Naveenkumar S - Worked on SNS Merger\nAravind - Worked on SNS Merger\nSanjay N – Testing the CCE and Aggregator Projects',
+      todayPlans: 'Naveenkumar S - Complete Deployment in Render or Railway.\nAravind - Completion of Bug Fixing in the Aggregator Platform and Deployment\nSanjay N – Testing For Aggregator and Gen AI Suite',
+      blockers: 'N/A',
+      taskBacklog: 'Implementing scrapping pipeline|Naveenkumar|In Progress|N/A|12-3-2025\nBackend Integration and Frontend work|Aravindan|In Progress|N/A|12-3-2025\nComplete Whole Assessment Testing|Sanjay|In Progress|NO|12-3-2025',
+      impediments: 'Issues Raised: About Deployment of Webscrpaing\nAction Items for Resolution: Research on Deployment of web scraping',
+      actionsToTake: 'Decisions Taken: Completion of Project and Deployment With Bug Fixing'
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
       <div className="container mx-auto px-4 py-8">
@@ -733,8 +775,16 @@ const DailyScrumReportCreator = () => {
           <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-6">
             <div className="flex justify-between items-center">
               <h1 className="text-3xl font-bold text-white">Daily Scrum Report Creator</h1>
-              <div className="bg-white bg-opacity-20 px-4 py-2 rounded-lg text-blue-600 text-lg">
-                {formData.teamName || 'Team Scrum'}
+              <div className="flex gap-4">
+                <button
+                  onClick={loadExample}
+                  className="bg-white bg-opacity-20 px-4 py-2 rounded-lg text-blue-600 hover:bg-opacity-30 transition-all text-lg"
+                >
+                  Load Example
+                </button>
+                <div className="bg-white bg-opacity-20 px-4 py-2 rounded-lg text-blue-600 text-lg">
+                  {formData.teamName || 'Team Scrum'}
+                </div>
               </div>
             </div>
           </div>
@@ -791,9 +841,9 @@ const DailyScrumReportCreator = () => {
                         setActiveTab(tabs[currentIndex - 1]);
                       }}
                       className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
->
-  Previous
-</button>
+                    >
+                      Previous
+                    </button>
                   }
                 </div>
 

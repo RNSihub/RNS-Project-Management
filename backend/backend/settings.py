@@ -56,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',  # CORS middleware
+    'django.middleware.csrf.CsrfViewMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -191,6 +192,16 @@ EMAIL_HOST_PASSWORD = 'rqdfvijjlywvcxyp'
 # settings.py
 DEBUG = True
 ALLOWED_HOSTS = ['*']
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',  # Add your frontend's origin here
+]
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',  # Add your frontend's origin here
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 # settings.py
 APPEND_SLASH = False

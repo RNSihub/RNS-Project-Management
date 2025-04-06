@@ -179,7 +179,7 @@ const Sidebar = ({ user, onLogout }) => {
     { 
       icon: <Mail size={20} />, 
       label: 'Mail Drafter', 
-      path: '/mail-drafter',
+      path: '/mail',
       category: 'Main Tools'
     },
     { 

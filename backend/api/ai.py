@@ -1,12 +1,14 @@
 import json
 import os
+import logging
+from datetime import datetime
+
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-import google.generativeai as genai
-import logging
 from pymongo import MongoClient
-from datetime import datetime
+
+import google.generativeai as genai
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -24,6 +26,8 @@ try:
     mongo_client = MongoClient(mongo_uri)
     db = mongo_client.get_database(os.environ.get('MONGO_DB', 'Todo_Lister'))
     user_story_collection = db['UserStory']
+    user_mail = db['UserMail']
+    saved_mail = db['SavedMail']
     logger.info("MongoDB connection established successfully")
 except Exception as e:
     logger.error(f"MongoDB connection error: {str(e)}")
@@ -32,29 +36,22 @@ except Exception as e:
 @require_POST
 def chatbot_view(request):
     try:
-        # Parse the request data
         data = json.loads(request.body)
         user_message = data.get('message', '')
         message_history = data.get('history', [])
 
-        # If there's history, convert it to the format expected by the Gemini API
-        chat_history = []
-        if message_history:
-            chat_history = message_history
+        chat_history = message_history if message_history else []
 
-        # Create a chat session
         chat = model.start_chat(history=chat_history)
-
-        # Generate a response
         response = chat.send_message(user_message)
 
-        # Return the response
         return JsonResponse({
             'response': response.text,
             'success': True
         })
 
     except Exception as e:
+        logger.error(f"Chatbot error: {str(e)}")
         return JsonResponse({
             'success': False,
             'error': str(e),
@@ -72,9 +69,7 @@ def generate_content(request):
         if not requirement_text:
             return JsonResponse({'error': 'Requirement text is required'}, status=400)
 
-        # Generate content using Gemini API
         result = generate_user_story_and_acceptance_criteria(requirement_text)
-
         return JsonResponse(result)
 
     except Exception as e:
@@ -90,11 +85,10 @@ def save_content(request):
         content = data.get('content')
         user_id = data.get('user_id', 'anonymous')
         theme = data.get('theme', 'light')
-        
+
         if not requirement or not content:
             return JsonResponse({'error': 'Requirement and content are required', 'success': False}, status=400)
-            
-        # Create document to save in MongoDB
+
         document = {
             'user_id': user_id,
             'requirement': requirement,
@@ -103,17 +97,14 @@ def save_content(request):
             'created_at': datetime.now(),
             'updated_at': datetime.now()
         }
-        
-        # Insert into MongoDB
+
         result = user_story_collection.insert_one(document)
-        
-        # Return success response with the ID
         return JsonResponse({
             'success': True,
             'message': 'Content saved successfully',
             'id': str(result.inserted_id)
         })
-        
+
     except Exception as e:
         logger.error(f"Error saving content: {str(e)}")
         return JsonResponse({
@@ -129,22 +120,20 @@ def get_saved_contents(request):
         data = json.loads(request.body)
         user_id = data.get('user_id', 'anonymous')
         limit = data.get('limit', 10)
-        
-        # Get saved contents from MongoDB
+
         contents = list(user_story_collection.find(
             {'user_id': user_id},
             {'_id': 1, 'requirement': 1, 'user_story': 1, 'acceptance_criteria': 1, 'created_at': 1}
         ).sort('created_at', -1).limit(limit))
-        
-        # Convert ObjectId to string
+
         for content in contents:
             content['_id'] = str(content['_id'])
-            
+
         return JsonResponse({
             'success': True,
             'contents': contents
         })
-        
+
     except Exception as e:
         logger.error(f"Error retrieving saved contents: {str(e)}")
         return JsonResponse({
@@ -153,9 +142,58 @@ def get_saved_contents(request):
             'details': str(e)
         }, status=500)
 
+@csrf_exempt
+@require_POST
+def generate_mail(request):
+    try:
+        data = json.loads(request.body)
+        user_details = data.get('userDetails')
+        mail_config = data.get('mailConfig')
+
+        if not user_details or not mail_config:
+            return JsonResponse({'error': 'User details and mail configuration are required'}, status=400)
+
+        prompt = f"""
+        Generate a professional email based on the following details:
+
+        User Details:
+        - Name: {user_details.get('name')}
+        - Role: {user_details.get('role')}
+        - Department: {user_details.get('department')}
+        - Employee ID: {user_details.get('employeeId', '')}
+        - Class/Section: {user_details.get('class', '')}
+        - Product/Factory Number: {user_details.get('productFactoryNumber', '')}
+
+        Mail Configuration:
+        - Mail Type: {mail_config.get('mailType')}
+        - Recipient: {mail_config.get('recipient')}
+        - Recipient Role: {mail_config.get('recipientRole')}
+        - Start Date: {mail_config.get('startDate', '')}
+        - End Date: {mail_config.get('endDate', '')}
+        - Reason: {mail_config.get('reason')}
+        - Subject: {mail_config.get('subject', '')}
+
+        Ensure the email is polite, professional, and includes all necessary details.
+        """
+
+        response = model.generate_content(prompt)
+        mail_content = response.text
+
+        return JsonResponse({
+            'mail_content': mail_content,
+            'success': True
+        })
+
+    except Exception as e:
+        logger.error(f"Error generating mail: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Failed to generate mail',
+            'details': str(e)
+        }, status=500)
+
 def generate_user_story_and_acceptance_criteria(requirement_text):
     try:
-        # Create a structured prompt for the Gemini model
         prompt = f"""
         Based on the following requirement, generate a well-structured user story and detailed acceptance criteria.
 
@@ -172,20 +210,12 @@ def generate_user_story_and_acceptance_criteria(requirement_text):
         - Include any specific business rules or constraints
         """
 
-        # Configure the model
-        model = genai.GenerativeModel('gemini-1.5-pro')
-
-        # Generate the response
         response = model.generate_content(prompt)
-
-        # Process the response text
         response_text = response.text
 
-        # Extract user story and acceptance criteria
         user_story = ""
         acceptance_criteria = []
 
-        # Simple parsing logic - can be enhanced for more complex outputs
         sections = response_text.split("Acceptance Criteria:")
 
         if len(sections) > 0 and "User Story:" in sections[0]:
@@ -193,24 +223,18 @@ def generate_user_story_and_acceptance_criteria(requirement_text):
 
         if len(sections) > 1:
             criteria_text = sections[1].strip()
-            # Extract numbered criteria
             for line in criteria_text.split('\n'):
-                # Check if line starts with a number or a dash
                 if (line.strip() and (line.strip()[0].isdigit() or line.strip()[0] == '-')):
-                    # Remove the number/dash and its trailing characters
                     clean_line = line.strip()
                     if clean_line[0].isdigit():
-                        # Find the position after the number and any following characters like '.' or ')'
                         pos = 0
                         while pos < len(clean_line) and (clean_line[pos].isdigit() or clean_line[pos] in '.)'):
                             pos += 1
                         clean_line = clean_line[pos:].strip()
-                    else:  # Starts with dash
+                    else:
                         clean_line = clean_line[1:].strip()
-
                     acceptance_criteria.append(clean_line)
 
-        # If parsing fails, provide a fallback
         if not user_story:
             user_story = "Could not parse user story from the response."
 
