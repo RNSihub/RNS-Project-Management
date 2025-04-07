@@ -16,6 +16,7 @@ import SpeechToText from "./pages/TextTools/STT"; // Updated import to PascalCas
 import DailScrumReportCreator from "./pages/Report/mom";
 import DailyScruReportCreator from "./pages/Report/daily-report";
 import MailDrafter from "./pages/Report/mail";
+import DailyReportSubmission from "./pages/Report/Report_Sheet"; // Updated import to PascalCase
 const App = () => {
   const [user, setUser] = useState(null);
 
@@ -54,6 +55,7 @@ const App = () => {
           <Route path="/daily-scrum-report" element={<DailScrumReportCreator />}/>
           <Route path="/daily-report" element={<DailyScruReportCreator />}/>
           <Route path="/mail" element={<MailDrafter />}/>
+          <Route path="/daily-report-submission" element={<DailyReportSubmission />}/>
 
         </Routes>
       </div>

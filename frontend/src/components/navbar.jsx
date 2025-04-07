@@ -29,7 +29,8 @@ import {
   MoreHorizontal,
   FileSearch2,
   FileSearchIcon,
-  Mail
+  Mail,
+  Subtitles
 } from 'lucide-react';
 
 const Sidebar = ({ user, onLogout }) => {
@@ -180,6 +181,12 @@ const Sidebar = ({ user, onLogout }) => {
       icon: <Mail size={20} />, 
       label: 'Mail Drafter', 
       path: '/mail',
+      category: 'Main Tools'
+    },
+    { 
+      icon: <Subtitles size={20} />, 
+      label: 'Report', 
+      path: '/daily-report-submission',
       category: 'Main Tools'
     },
     { 
