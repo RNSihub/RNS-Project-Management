@@ -16,7 +16,9 @@ import SpeechToText from "./pages/TextTools/STT"; // Updated import to PascalCas
 import DailScrumReportCreator from "./pages/Report/mom";
 import DailyScruReportCreator from "./pages/Report/daily-report";
 import MailDrafter from "./pages/Report/mail";
-import DailyReportSubmission from "./pages/Report/Report_Sheet"; // Updated import to PascalCase
+import DailyReportSubmission from "./pages/Report/Report_Sheet";
+import LandingPage from "./pages/Landing"; // Updated import to PascalCase
+
 const App = () => {
   const [user, setUser] = useState(null);
 
@@ -36,29 +38,37 @@ const App = () => {
 
   return (
     <Router>
-      {/* Conditionally render Sidebar only when user is logged in */}
-      {user && <Sidebar user={user} onLogout={handleLogout} />}
-
-      <div className={`transition-all duration-300 ${user ? 'pl-20 md:pl-64' : 'pl-0'}`}>
-        <Routes>
-          <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Login setUser={setUser} />} />
-          <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to="/" />} />
-          <Route path="/createaccount" element={<SignUp />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/attendance" element={<Attendance />} /> {/* Updated Route */}
-          <Route path="/todo" element={<TodoListApp />} /> {/* Updated Route */}
-          <Route path="/projects" element={<ProjectConversationApp />} /> {/* Updated Route */}
-          <Route path="/chatbot" element={<ChatBot />}/>
-          <Route path="/content-generation" element={<ContentGenerator />}/>
-          <Route path="/text-to-speech" element={<TextToSpeech />}/>
-          <Route path="/speech-to-text" element={<SpeechToText />}/>
-          <Route path="/daily-scrum-report" element={<DailScrumReportCreator />}/>
-          <Route path="/daily-report" element={<DailyScruReportCreator />}/>
-          <Route path="/mail" element={<MailDrafter />}/>
-          <Route path="/daily-report-submission" element={<DailyReportSubmission />}/>
-
-        </Routes>
-      </div>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route
+          path="*"
+          element={
+            <div className="Summa">
+              {/* Conditionally render Sidebar only when user is logged in */}
+              {user && <Sidebar user={user} onLogout={handleLogout} />}
+              <div className={`transition-all duration-300 ${user ? 'pl-20 md:pl-64' : 'pl-0'}`}>
+                <Routes>
+                  <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login setUser={setUser} />} />
+                  <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to="/" />} />
+                  <Route path="/createaccount" element={<SignUp />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/attendance" element={<Attendance />} /> {/* Updated Route */}
+                  <Route path="/todo" element={<TodoListApp />} /> {/* Updated Route */}
+                  <Route path="/projects" element={<ProjectConversationApp />} /> {/* Updated Route */}
+                  <Route path="/chatbot" element={<ChatBot />} />
+                  <Route path="/content-generation" element={<ContentGenerator />} />
+                  <Route path="/text-to-speech" element={<TextToSpeech />} />
+                  <Route path="/speech-to-text" element={<SpeechToText />} />
+                  <Route path="/daily-scrum-report" element={<DailScrumReportCreator />} />
+                  <Route path="/daily-report" element={<DailyScruReportCreator />} />
+                  <Route path="/mail" element={<MailDrafter />} />
+                  <Route path="/daily-report-submission" element={<DailyReportSubmission />} />
+                </Routes>
+              </div>
+            </div>
+          }
+        />
+      </Routes>
     </Router>
   );
 };

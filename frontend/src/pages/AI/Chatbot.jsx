@@ -27,7 +27,7 @@ const ChatBot = () => {
     setTimeout(() => {
       setMessages([
         {
-          text: "Hello! I'm RNS Project Assistance. How can I help you today?",
+          text: "Hello! I'm RNS StratX . How can I help you today?",
           sender: 'bot',
           id: Date.now(),
         },
@@ -157,7 +157,7 @@ const ChatBot = () => {
     setTimeout(() => {
       setMessages([
         {
-          text: "Hello! I'm RNS Project Assistance. How can I help you today?",
+          text: "Hello! I'm RNS StratX . How can I help you today?",
           sender: 'bot',
           id: Date.now(),
         },
@@ -223,7 +223,7 @@ const ChatBot = () => {
             >
               🤖
             </motion.span>
-            RNS Project Assistance
+            RNS StratX
           </motion.h2>
           <div className="flex space-x-3 relative">
             <motion.button
@@ -310,11 +310,10 @@ const ChatBot = () => {
               layout
             >
               <motion.div
-                className={`relative max-w-xl p-4 rounded-xl shadow-md ${
-                  message.sender === 'user'
+                className={`relative max-w-xl p-4 rounded-xl shadow-md ${message.sender === 'user'
                     ? 'bg-indigo-100 border-indigo-200 border text-indigo-800'
                     : 'bg-white text-gray-800 border border-green-200'
-                } transition-all duration-300 hover:shadow-lg`}
+                  } transition-all duration-300 hover:shadow-lg`}
                 whileHover={{ scale: 1.01 }}
               >
                 <div
@@ -324,13 +323,12 @@ const ChatBot = () => {
 
                 <motion.button
                   onClick={() => copyMessageToClipboard(message.text, message.id)}
-                  className={`absolute -top-2 -right-2 p-1.5 rounded-full ${
-                    copyStatus === message.id
+                  className={`absolute -top-2 -right-2 p-1.5 rounded-full ${copyStatus === message.id
                       ? 'bg-green-500'
                       : message.sender === 'user'
                         ? 'bg-indigo-100 border-indigo-200 border'
                         : 'bg-white border border-green-200'
-                  } opacity-0 group-hover:opacity-100 transition-all duration-200`}
+                    } opacity-0 group-hover:opacity-100 transition-all duration-200`}
                   title="Copy message"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}

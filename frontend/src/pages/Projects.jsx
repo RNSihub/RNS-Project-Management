@@ -490,7 +490,7 @@ const ProjectConversationApp = () => {
         <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-white p-5 rounded-lg shadow-lg flex items-center space-x-3 animate-pulse">
             <Loader className="text-indigo-600 animate-spin" size={24} />
-            <span className="text-indigo-800 font-medium">RNS<br/>Loading...</span>
+            <span className="text-indigo-800 font-medium">RNS StratX<br/>Loading...</span>
           </div>
         </div>
       )}

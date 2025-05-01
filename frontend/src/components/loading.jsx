@@ -127,7 +127,7 @@ const RNSLoadingSpinner = () => {
           initial="initial"
           animate="animate"
         >
-          <span className="text-blue-800 font-semibold text-xs">RNS<br/>Loading</span>
+          <span className="text-blue-800 font-semibold text-xs">RNS StratX<br/>Loading</span>
         </motion.div>
       </motion.div>
       

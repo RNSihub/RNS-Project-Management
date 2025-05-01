@@ -446,7 +446,7 @@ const Sidebar = ({ user, onLogout }) => {
         <button 
           onClick={() => {
             onLogout();
-            navigate('/');
+            navigate('/login');
           }}
           className={`
             w-full flex items-center p-3 rounded-md 
